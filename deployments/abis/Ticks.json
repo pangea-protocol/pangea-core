@@ -1,0 +1,12 @@
+[
+  {
+    "inputs": [],
+    "name": "PriceOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TickOutOfBounds",
+    "type": "error"
+  }
+]

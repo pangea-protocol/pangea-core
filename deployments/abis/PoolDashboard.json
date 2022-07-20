@@ -1,0 +1,147 @@
+[
+  {
+    "inputs": [],
+    "name": "NotPool",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "airdropDistributor",
+    "outputs": [
+      {
+        "internalType": "contract IAirdropDistributor",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "cumulativeAirdrop",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "airdrop0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "airdrop1",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "cumulativeFees",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "fee0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fee1",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "cumulativeTradingFees",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tradingFee0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tradingFee1",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "cumulativeTradingVolume",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tradingVolume0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tradingVolume1",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_masterDeployer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_airdropDistributor",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "masterDeployer",
+    "outputs": [
+      {
+        "internalType": "contract IMasterDeployer",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
