@@ -13,7 +13,7 @@ artifacts/
 
 # Deployments
 deployments/localhost/
-deployments/klaytnlocal/
+deployments/hardhat/
 deployments/abis/
 
 # Typechain
@@ -30,11 +30,6 @@ exports/
 coverage/
 coverage.json
 
-# Temp/hardhat stuff that shouldn't be pushed
-local/
-
-tenderly.yaml
-
 # Certora
 .certora_config
 .last_confs
@@ -42,7 +37,6 @@ tenderly.yaml
 .certora_metadata.json
 .certora_recent_jobs.json
 .certora_verify.json
-/deployments/hardhat/
 
 # docgen
 docs/

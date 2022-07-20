@@ -28,7 +28,7 @@ yarn test
 yarn coverage
 ````
 
-#### Deploy & Run Local Node
+#### Run Local Test Network
 
 ````shell
 yarn hardhat:deploy
