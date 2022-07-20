@@ -14,7 +14,6 @@ artifacts/
 # Deployments
 deployments/localhost/
 deployments/hardhat/
-deployments/abis/
 
 # Typechain
 types/

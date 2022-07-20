@@ -1,0 +1,27 @@
+[
+  {
+    "inputs": [],
+    "name": "NotExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotLPAirdropDistributor",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotPoolToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotYet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Overflow",
+    "type": "error"
+  }
+]

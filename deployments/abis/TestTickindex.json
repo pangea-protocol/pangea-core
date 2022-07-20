@@ -1,0 +1,56 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IConcentratedLiquidityPool",
+        "name": "pool",
+        "type": "address"
+      },
+      {
+        "internalType": "int24",
+        "name": "lowerOld",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "lower",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "upperOld",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "upper",
+        "type": "int24"
+      }
+    ],
+    "name": "adjust",
+    "outputs": [
+      {
+        "internalType": "int24",
+        "name": "",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "",
+        "type": "int24"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

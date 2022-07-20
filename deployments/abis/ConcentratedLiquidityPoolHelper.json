@@ -1,0 +1,79 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IConcentratedLiquidityPool",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "getTickState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "int24",
+            "name": "index",
+            "type": "int24"
+          },
+          {
+            "internalType": "uint128",
+            "name": "liquidity",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct ConcentratedLiquidityPoolHelper.SimpleTick[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IConcentratedLiquidityPool",
+        "name": "pool",
+        "type": "address"
+      }
+    ],
+    "name": "getTickStateDetail",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "int24",
+            "name": "index",
+            "type": "int24"
+          },
+          {
+            "internalType": "uint128",
+            "name": "liquidity",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint256",
+            "name": "feeGrowthOutside0",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "feeGrowthOutside1",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint160",
+            "name": "secondsGrowthOutside",
+            "type": "uint160"
+          }
+        ],
+        "internalType": "struct ConcentratedLiquidityPoolHelper.DetailTick[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
