@@ -7,7 +7,6 @@ module.exports = {
     "libraries",
     "misc",
     "test",
-    "descriptor"
   ],
   mocha: {
     grep: "@skip-on-coverage",

@@ -1,33 +1,39 @@
-# PANGEA-Protocol : Next Generation Exchange, Concentrated Liquidity Pool with Governance
+# PANGEA-Protocol : Next Generation Exchange with Concentrated Liquidity Pool
 
-## Local Development
+This repository contains the core smart contracts(Concentrated Liquidity Pool) for the PANGEA Protocol. In-depth documentation on Pangea is available at [pangea docs](https://pangea.gitbook.io/pangea-kr/overview/undefined).
 
-### Install Dependencies
+### SetUp
+
+#### Install Dependencies
 
 ````shell
 yarn install
 ````
 
-### Compile Contracts
+#### Compile Contracts
 
 ````shell
 yarn build
 ````
 
-### Run Tests
+#### Run Tests
 
 ````shell
 yarn test
 ````
 
-### Run Test Coverage
+#### Run Test Coverage
 
 ````shell
 yarn coverage
 ````
 
-### Deploy & Run Local Node
+#### Run Local Test Network
 
 ````shell
 yarn hardhat:deploy
 ````
+
+#### AUDITS
+
+* [HACHI LABS audit](https://docs.google.com/document/d/1Fy7IkDYjPPz4uEGLaDhGLc7vgMEKlFDiOpxYIa7hLIU/edit?usp=sharing)
