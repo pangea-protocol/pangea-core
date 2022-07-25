@@ -6,6 +6,8 @@ This repository contains the core smart contracts(Concentrated Liquidity Pool) f
 
 #### Baobab
 
+* service : [baobab pangea](https://dev-app.pangea.money/)
+
 | contract | address |
 | ---      | ----    |
 | AirdropDistributor | 0x4Ab0b755f748FF98cE55aC0482CB28F29cCC01EA | 
