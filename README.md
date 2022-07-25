@@ -55,4 +55,4 @@ yarn hardhat:deploy
 
 #### AUDITS
 
-* [HACHI LABS audit](https://docs.google.com/document/d/1Fy7IkDYjPPz4uEGLaDhGLc7vgMEKlFDiOpxYIa7hLIU/edit?usp=sharing)
+* [HACHI LABS audit](https://github.com/pangea-protocol/pangea-core/blob/main/audits/%5BHAECHI%20AUDIT%5D%20Smart%20Contract%20Audit%20Reports%20for%20Pangea.pdf)
