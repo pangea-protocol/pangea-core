@@ -121,6 +121,12 @@ interface IConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct {
     /// @notice The fee growth of token1 collected per unit of liquidity for the entire life of the pool
     function feeGrowthGlobal1() external view returns (uint256);
 
+    /// @notice The swap fee growth of token0 collected per unit of liquidity for the entire life of the pool
+    function swapFeeGrowthGlobal0() external view returns (uint256);
+
+    /// @notice The swap fee growth of token1 collected per unit of liquidity for the entire life of the pool
+    function swapFeeGrowthGlobal1() external view returns (uint256);
+
     /// @notice fee growth of token0 & token1 inside the given price range
     /// @param lower The lower tick of the position
     /// @param upper The upper tick of the position
