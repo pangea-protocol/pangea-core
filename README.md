@@ -6,21 +6,19 @@ This repository contains the core smart contracts(Concentrated Liquidity Pool) f
 
 #### Baobab
 
-* service : [baobab pangea](https://dev-app.pangea.money/)
+* service : [baobab pangea](https://app.dev.pangeaswap.com/)
 
 | contract | address |
 | ---      | ----    |
-| AirdropDistributor | 0x4Ab0b755f748FF98cE55aC0482CB28F29cCC01EA | 
-| ConcentratedLiquidityPoolFactory | 0x0846b68C4C72C8940B402217CDfD63706071bEc5 | 
-| ConcentratedLiquidityPoolHelper | 0xeDb36f4b7dEA02e213eD7928f83E0e51F6bA7F51 | 
-| ConcentratedLiquidityPoolManager | 0xdd042114Dd4C6a0CF0C09b396957EAFa160258a6 | 
-| MasterDeployer | 0xA0eb50178277596A709Bd1542ea1942e942E2C84 | 
-| PoolDashboard | 0x0D0503Cd0768268fd2586d3eae2C4053F91FE806 | 
-| PoolLogger | 0x09180a88Eb9e6d1b1258023697a9eED0588Fee11 | 
-| PoolRouter | 0xcDF21AC0B04715dB4f4d37adE2C394a6efe30B37 | 
-| PositionDashboard | 0xECB43Cd623785e0aFd1bAe7bB24f6bBc95F2dCC3 | 
-| SwapHelper | 0x9E2fFC3414e0b98d3c985924dE51c6a35D47795E | 
-| WETH10 | 0x3e825cbA8d59Eb0E62A24Db1A8F85158d30A26c3 | 
+| AirdropDistributor | `0xabAF9FED5d9Fc75C379f5811de61Ed944b537375` | 
+| ConcentratedLiquidityPoolFactory | `0x0Aa43C5be7E7AfdebFDb06c5B9922173f4c1A46b` | 
+| ConcentratedLiquidityPoolHelper | `0x1de8bA72924a257E638c9EAb5254Cd3D7D1972a2` | 
+| ConcentratedLiquidityPoolManager | `0xC3cC953AB0E9caC716477A1a8C685f7451a80327` | 
+| MasterDeployer | `0x899d8Ff3d3BD16DBE4eFF245BdA27EF96C01044B` |
+| PoolLogger | `0x6e66D3aDfc2902b9e0A46C80D2803642596cc5F6` | 
+| PoolRouter | `0x42271971dbF42fbfEaF7F428604a86760300cB5B` |  
+| SwapHelper | `0xe45fDcd3e7f7bbd597fECA1aC45C879e6a04F197` | 
+| WETH10 | `0x0339d5Eb6D195Ba90B13ed1BCeAa97EbD198b106` | 
 
 
 ### SetUp

@@ -66,8 +66,8 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
     /// total fee (reward) = swap fee + airdrop
     ///  * swap Fee = Tokens accrued from swaps in the pool
     ///  * airdrop = Tokens provided to directly reward Liquidity Providers
-    uint256 internal swapFeeGrowthGlobal0;
-    uint256 internal swapFeeGrowthGlobal1;
+    uint256 public swapFeeGrowthGlobal0;
+    uint256 public swapFeeGrowthGlobal1;
 
     /// @dev airdrop fee growth counters are multiplied by 2 ^ 128.
     uint256 internal airdropGrowthGlobal0;
