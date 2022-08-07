@@ -854,4 +854,66 @@ describe("SCENARIO:EDGE CASE", function () {
       await burnAll(1);
     })
   });
+
+  /*
+   * SINGLE DEPOSIT EDGE CASE
+   *                                         CURRENT PRICE
+   *                                                |
+   *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
+   * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
+   *                                |---------------------------|
+   *                        |<->|           |<->|       |<->|           |<->|
+   *                        case1           case2       case3           case4
+   *                        |<--------->|                   |<--------->|
+   *                        case5                           case6
+   */
+  describe.only("# SINGLE DEPOSIT EDGE CASE", async () => {
+    let lp: BigNumber;
+
+    let airdrop0 = ethers.utils.parseEther('100');
+    let airdrop1 = ethers.utils.parseEther('200');
+
+    beforeEach("deploy Pool", async () => {
+      await addLiquidity(-4 * TICK_SPACING, 3 * TICK_SPACING);
+      lp = (await poolManager.positions(1)).liquidity;
+
+      let startTime = (await ethers.provider.getBlock('latest')).timestamp + 10;
+      let period = 604_800;
+      await token0.connect(airdropManager).mint(airdropManager.address, airdrop0);
+      await token1.connect(airdropManager).mint(airdropManager.address, airdrop1);
+      await token0.connect(airdropManager).approve(pool.address, airdrop0);
+      await token1.connect(airdropManager).approve(pool.address, airdrop1);
+      await pool.connect(airdropManager).depositAirdrop(
+          airdrop0,
+          airdrop1,
+          startTime,
+          period
+      )
+      await setNextTimeStamp(startTime+10000);
+    });
+
+    it("TEST 1) price range : -6 ~ -5 ", async () => {
+      await addLiquidity(-6 * TICK_SPACING, -5 * TICK_SPACING);
+    })
+
+    it("TEST 2) price range : -2 ~ -1 ", async () => {
+      await addLiquidity(-2 * TICK_SPACING, -1 * TICK_SPACING);
+    })
+
+    it("TEST 3) price range : 1 ~ 2 ", async () => {
+      await addLiquidity(1 * TICK_SPACING, 2 * TICK_SPACING);
+    })
+
+    it("TEST 4) price range : 5 ~ 6 ", async () => {
+      await addLiquidity(5 * TICK_SPACING, 6 * TICK_SPACING);
+    })
+
+    it("TEST 5) price range : -6 ~ -1 ", async () => {
+      await addLiquidity(-6 * TICK_SPACING, -1 * TICK_SPACING);
+    })
+
+    it("TEST 6) price range : 2 ~ 5 ", async () => {
+      await addLiquidity(2 * TICK_SPACING, 5 * TICK_SPACING);
+    })
+  })
 });
