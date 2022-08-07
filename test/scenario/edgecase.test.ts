@@ -1039,30 +1039,147 @@ describe("SCENARIO:EDGE CASE", function () {
     });
 
     it("TEST 5) price range : -8 ~ -3 ", async () => {
+      console.log("1 case");
       await expect(
         addLiquidity(-8 * TICK_SPACING, -3 * TICK_SPACING)
       ).to.be.not.reverted;
-      await increaseTime(1000);
+      await increaseTime(10_000);
 
+      console.log("2 case");
       await expect(
         addLiquidity(-8 * TICK_SPACING, -5 * TICK_SPACING)
       ).to.be.not.reverted;
-      await increaseTime(1000);
+      await increaseTime(10_000);
 
+      console.log("3 case");
       await expect(
         addLiquidity(-8 * TICK_SPACING, -1 * TICK_SPACING)
       ).to.be.not.reverted;
-      await increaseTime(1000);
+      await increaseTime(10_000);
 
+      console.log("4 case");
       await expect(
         addLiquidity(-10 * TICK_SPACING, -3 * TICK_SPACING)
       ).to.be.not.reverted;
-      await increaseTime(1000);
+      await increaseTime(10_000);
     });
 
     it("TEST 6) price range : 4 ~ 7 ", async () => {
       await expect(addLiquidity(4 * TICK_SPACING, 7 * TICK_SPACING)).to.be.not
         .reverted;
     });
+  });
+
+
+  /*
+   *                                         CURRENT PRICE
+   *                                                |
+   *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
+   * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
+   *                |<------------------------------LP0-------------------------------->|
+   *
+   */
+  describe('# UNDERFLOW SCENARIO CASE', function () {
+
+    let baseLP: BigNumber;
+
+    let airdrop0 = ethers.utils.parseEther("1000");
+    let airdrop1 = ethers.utils.parseEther("2000");
+
+    beforeEach("deploy Pool", async () => {
+      await addLiquidity(-8 * TICK_SPACING, 9 * TICK_SPACING);
+      baseLP = (await poolManager.positions(1)).liquidity;
+
+      let startTime = (await ethers.provider.getBlock("latest")).timestamp + 10;
+      let period = 604_800;
+      await token0
+          .connect(airdropManager)
+          .mint(airdropManager.address, airdrop0);
+      await token1
+          .connect(airdropManager)
+          .mint(airdropManager.address, airdrop1);
+      await token0.connect(airdropManager).approve(pool.address, airdrop0);
+      await token1.connect(airdropManager).approve(pool.address, airdrop1);
+      await pool
+          .connect(airdropManager)
+          .depositAirdrop(airdrop0, airdrop1, startTime, period);
+      await setNextTimeStamp(startTime + 100_000);
+    });
+
+    it.only("scenario", async () => {
+      // reference : https://github.com/code-423n4/2021-09-sushitrident-2-findings/issues/13
+
+      // First, price goes up ( 0 * TICK_SPACING => 4 * TICK_SPACING)
+      {
+        const {token1}= await tokenBetween(baseLP, 0 * TICK_SPACING, 4 * TICK_SPACING)
+        await swapToken1ToToken0(token1);
+      }
+
+      // Second, Alice create a position for uninitialized ticks [-20, 30]
+      await addLiquidity(-2 * TICK_SPACING, 3 * TICK_SPACING);
+      let aliceLP = (await poolManager.positions(2)).liquidity;
+
+      // Third, price goes up again (4 * TICK_SPACING => 5 * TICK_SPACING)
+      {
+        const {token1}= await tokenBetween(baseLP, 4 * TICK_SPACING, 5 * TICK_SPACING)
+        await swapToken1ToToken0(token1);
+        await increaseTime(10_000); // for airdrop
+      }
+
+      // Fourth, Bob create a position for ticks [20, 30]
+      await addLiquidity(2 * TICK_SPACING, 3 * TICK_SPACING);
+      let bobLP = (await poolManager.positions(2)).liquidity;
+      const bobPositionId = 3; // token ID 3
+
+      let positionFee = await poolManager.positionFees(bobPositionId);
+      let rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
+      console.log(`BOB's initial positionFee Info`)
+      console.log(`token0           : ${positionFee.token0amount}`);
+      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
+      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
+      console.log(`--------------\n`)
+
+      // Third, price goes down (5 * TICK_SPACING => 0 * TICK_SPACING)
+      {
+        let {token0} = await tokenBetween(baseLP, 3 * TICK_SPACING, 5 * TICK_SPACING)
+        await swapToken0ToToken1(token0);
+
+        token0 = (await tokenBetween(baseLP.add(aliceLP).add(bobLP), 2 * TICK_SPACING, 3 * TICK_SPACING)).token0;
+        await swapToken0ToToken1(token0);
+
+        token0 = (await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING)).token0;
+        await swapToken0ToToken1(token0);
+
+        await increaseTime(10_000); // for airdrop
+      }
+
+      positionFee = await poolManager.positionFees(bobPositionId);
+      rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
+      console.log(`BOB's second positionFee Info`)
+      console.log(`token0           : ${positionFee.token0amount}`);
+      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
+      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
+      console.log(`--------------\n`)
+
+
+      // Third, price goes up again (0 * TICK_SPACING => 2.5 * TICK_SPACING)
+      {
+        let token1 = (await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING)).token1;
+        await swapToken1ToToken0(token1);
+
+        token1 = (await tokenBetween(baseLP.add(aliceLP).add(bobLP), 2*TICK_SPACING, 2.5 * TICK_SPACING)).token1;
+        await swapToken1ToToken0(token1);
+
+        await increaseTime(600_000); // for airdrop
+      }
+
+      positionFee = await poolManager.positionFees(bobPositionId);
+      rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
+      console.log(`BOB's third positionFee Info`)
+      console.log(`token0           : ${positionFee.token0amount}`);
+      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
+      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
+      console.log(`--------------\n`)
+    })
   });
 });
