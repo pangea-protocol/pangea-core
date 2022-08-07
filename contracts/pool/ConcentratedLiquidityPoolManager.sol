@@ -362,14 +362,11 @@ contract ConcentratedLiquidityPoolManager is
         Position memory position = positions[positionId];
 
         (feeGrowthInside0, feeGrowthInside1) = IConcentratedLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
-
-        token0amount = feeGrowthInside0 > position.feeGrowthInside0
-            ? FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) + position.feeOwed0
-            : position.feeOwed0;
-
-        token1amount = feeGrowthInside1 > position.feeGrowthInside1
-            ? FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) + position.feeOwed1
-            : position.feeOwed1;
+        unchecked {
+            // @dev underflow is intended.
+            token0amount = FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) + position.feeOwed0;
+            token1amount = FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) + position.feeOwed1;
+        }
     }
 
     function _transferBoth(

@@ -188,11 +188,6 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
 
         _updateObservationRecord(uint256(liquidity));
 
-        unchecked {
-            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
-        }
-
         {
             uint256 numOfInserted;
             (nearestTick, numOfInserted) = Ticks.insert(
@@ -209,6 +204,12 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
                 uint160(currentPrice)
             );
             totalTicks += numOfInserted;
+        }
+
+        unchecked {
+            // already all initialized
+            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
+            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
         }
 
         (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
@@ -723,16 +724,13 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
         int128 amount
     ) internal {
         Position storage position = positions[owner][lower][upper];
-
         (uint256 rangeFeeGrowth0, uint256 rangeFeeGrowth1) = rangeFeeGrowth(lower, upper);
 
         uint256 amount0Fees;
-        if (rangeFeeGrowth0 > position.feeGrowthInside0Last) {
-            amount0Fees = FullMath.mulDiv(rangeFeeGrowth0 - position.feeGrowthInside0Last, position.liquidity, FixedPoint.Q128);
-        }
-
         uint256 amount1Fees;
-        if (rangeFeeGrowth1 > position.feeGrowthInside1Last) {
+        unchecked {
+            // @dev underflow is intended.
+            amount0Fees = FullMath.mulDiv(rangeFeeGrowth0 - position.feeGrowthInside0Last, position.liquidity, FixedPoint.Q128);
             amount1Fees = FullMath.mulDiv(rangeFeeGrowth1 - position.feeGrowthInside1Last, position.liquidity, FixedPoint.Q128);
         }
 
@@ -850,8 +848,12 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
             feeGrowthAbove1 = _feeGrowthGlobal1 - upper.feeGrowthOutside1;
         }
 
-        feeGrowthInside0 = _feeGrowthGlobal0 - feeGrowthBelow0 - feeGrowthAbove0;
-        feeGrowthInside1 = _feeGrowthGlobal1 - feeGrowthBelow1 - feeGrowthAbove1;
+        unchecked {
+            // @dev underflow is intended
+            // reference : https://github.com/code-423n4/2021-09-sushitrident-2-findings/issues/13
+            feeGrowthInside0 = _feeGrowthGlobal0 - feeGrowthBelow0 - feeGrowthAbove0;
+            feeGrowthInside1 = _feeGrowthGlobal1 - feeGrowthBelow1 - feeGrowthAbove1;
+        }
     }
 
     function getAssets() external view returns (address[] memory assets) {

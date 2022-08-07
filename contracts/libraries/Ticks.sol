@@ -88,7 +88,7 @@ library Ticks {
                     );
                 }
 
-                if (lower <= nearestTick) {
+                if (lower <= TickMath.getTickAtSqrtRatio(currentPrice)) {
                     ticks[lower] = IConcentratedLiquidityPoolStruct.Tick(
                         lowerOld,
                         oldNextTick,
@@ -120,7 +120,7 @@ library Ticks {
                 require(old.liquidity != 0 && oldNextTick > upper && upperOld < upper, "UPPER_ORDER");
             }
 
-            if (upper <= nearestTick) {
+            if (upper <= TickMath.getTickAtSqrtRatio(currentPrice)) {
                 ticks[upper] = IConcentratedLiquidityPoolStruct.Tick(
                     upperOld,
                     oldNextTick,
