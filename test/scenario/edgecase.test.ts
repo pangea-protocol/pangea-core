@@ -1106,7 +1106,7 @@ describe("SCENARIO:EDGE CASE", function () {
       await setNextTimeStamp(startTime + 100_000);
     });
 
-    it.only("scenario", async () => {
+    it("scenario", async () => {
       // reference : https://github.com/code-423n4/2021-09-sushitrident-2-findings/issues/13
 
       // First, price goes up ( 0 * TICK_SPACING => 4 * TICK_SPACING)
