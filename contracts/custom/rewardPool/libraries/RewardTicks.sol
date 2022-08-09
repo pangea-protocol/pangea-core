@@ -38,12 +38,12 @@ library RewardTicks {
         uint256 currentLiquidity,
         uint256 feeGrowthGlobalA,
         uint256 feeGrowthGlobalB,
-        uint256 rewardGrowthOutside,
+        uint256 rewardGrowthGlobal,
         bool zeroForOne,
         uint24 tickSpacing
     ) internal returns (uint256, int24) {
         ticks[nextTickToCross].secondsGrowthOutside = secondsGrowthGlobal - ticks[nextTickToCross].secondsGrowthOutside;
-        rewardGrowthOutsidePerTicks[nextTickToCross] = rewardGrowthOutside - rewardGrowthOutsidePerTicks[nextTickToCross];
+        rewardGrowthOutsidePerTicks[nextTickToCross] = rewardGrowthGlobal - rewardGrowthOutsidePerTicks[nextTickToCross];
 
         if (zeroForOne) {
             // Moving backwards through the linked list.

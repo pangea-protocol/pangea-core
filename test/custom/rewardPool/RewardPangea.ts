@@ -47,7 +47,7 @@ export class RewardPangea {
       PoolRouter,
       AirdropDistributor,
       TickMath,
-      RewardTickIndex,
+      TickIndex,
       RewardTicks,
       SwapHelper,
     ] = await Promise.all(
@@ -57,13 +57,13 @@ export class RewardPangea {
           "PoolRouter",
           "AirdropDistributor",
           "TickMathMock",
-          "RewardTickIndex",
+          "TickIndex",
           "RewardTicks",
           "SwapHelper",
         ])
     );
     const tickLibrary = await RewardTicks.deploy();
-    const tickIndexLibrary = await RewardTickIndex.deploy();
+    const tickIndexLibrary = await TickIndex.deploy();
     const clpLibs = {};
     clpLibs["RewardTicks"] = tickLibrary.address;
 
@@ -81,7 +81,7 @@ export class RewardPangea {
     const ConcentratedPoolManager = await ethers.getContractFactory(
         "RewardLiquidityPoolManager",
         {
-          libraries: { RewardTickIndex: tickIndexLibrary.address },
+          libraries: { TickIndex: tickIndexLibrary.address },
         }
     );
     const Logger = await ethers.getContractFactory("PoolLogger");

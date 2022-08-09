@@ -30,7 +30,7 @@ import "./interfaces/IRewardLiquidityPoolManagerStruct.sol";
 import "./interfaces/IRewardLiquidityPoolManagerEvent.sol";
 import "./interfaces/IRewardLiquidityPoolStruct.sol";
 import "./interfaces/IRewardLiquidityPool.sol";
-import "./libraries/RewardTickIndex.sol";
+import "../../libraries/TickIndex.sol";
 
 /// @notice Concentrated Liquidity Pool periphery contract that combines non-fungible position management
 contract RewardLiquidityPoolManager is
@@ -42,7 +42,7 @@ contract RewardLiquidityPoolManager is
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
-    using RewardTickIndex for IRewardLiquidityPool;
+    using TickIndex for IRewardLiquidityPool;
 
     address internal cachedMsgSender = address(1);
     address internal cachedPool = address(1);
