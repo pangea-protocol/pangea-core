@@ -89,7 +89,6 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       TICK_SPACING,
       true
     );
-    console.log("000");
 
     await masterDeployer.deployPool(
       poolFactory.address,
@@ -105,7 +104,6 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
             ]
         )
     );
-    console.log("123");
 
     const [tokenN0, tokenN1] =
       token0.address.toLowerCase() < wklay.address.toLowerCase()
@@ -127,8 +125,6 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       )
     );
 
-    console.log("234");
-
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
@@ -136,8 +132,6 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       "RewardLiquidityPool",
       poolAddress
     );
-
-    console.log("345");
 
     const nativePoolAddress = (
       await poolFactory.getPools(token0.address, wklay.address, 0, 1)
