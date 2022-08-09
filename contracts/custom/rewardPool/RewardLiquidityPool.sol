@@ -317,27 +317,36 @@ contract RewardLiquidityPool is
         int24 lower,
         int24 upper,
         uint256 desiredToken0Fees,
-        uint256 desiredToken1Fees,
-        uint256 desiredReward
+        uint256 desiredToken1Fees
     )
         external
         lock
         returns (
             uint256 token0Fees,
-            uint256 token1Fees,
-            uint256 rewards
+            uint256 token1Fees
         )
     {
-        _updatePosition(msg.sender, lower, upper, 0);
-        (token0Fees, token1Fees, rewards) = _collectFromOwed(msg.sender, lower, upper, desiredToken0Fees, desiredToken1Fees, desiredReward);
+        _updatePositionFee(msg.sender, lower, upper);
+        (token0Fees, token1Fees) = _collectFee(msg.sender, lower, upper, desiredToken0Fees, desiredToken1Fees);
 
         reserve0 -= uint128(token0Fees);
         reserve1 -= uint128(token1Fees);
 
         _transferBothTokens(msg.sender, token0Fees, token1Fees);
-        _transfer(rewardToken, rewards, msg.sender);
 
         try logger.emitCollect(IPoolEventStruct.CollectLoggingParams({amount0: token0Fees, amount1: token1Fees})) {} catch {}
+    }
+
+    function collectReward(
+        int24 lower,
+        int24 upper,
+        uint256 desiredReward
+    ) external lock returns (uint256 rewardAmount) {
+        _updatePositionReward(msg.sender, lower, upper);
+
+        rewardAmount = _collectReward(msg.sender, lower, upper, desiredReward);
+
+        _transfer(rewardToken, rewardAmount, msg.sender);
     }
 
     /// @dev Swaps one token for another. The router must prefund this contract and ensure there isn't too much slippage.
@@ -633,9 +642,9 @@ contract RewardLiquidityPool is
             if (_lastObservation < _airdropLastTime) {
                 uint256 diff = _airdropLastTime - Math.max(_lastObservation, _airdropStartTime);
 
-                airdrop0 += SafeCast.toUint128(FullMath.mulDiv(airdrop0PerSecond, diff, FixedPoint.Q128));
-                airdrop1 += SafeCast.toUint128(FullMath.mulDiv(airdrop1PerSecond, diff, FixedPoint.Q128));
-                reward += SafeCast.toUint128(FullMath.mulDiv(rewardPerSecond, diff, FixedPoint.Q128));
+                airdrop0 += SafeCast.toUint128(amountInRange(airdrop0PerSecond, diff));
+                airdrop1 += SafeCast.toUint128(amountInRange(airdrop1PerSecond, diff));
+                reward += SafeCast.toUint128(amountInRange(rewardPerSecond, diff));
             }
         }
 
@@ -677,7 +686,13 @@ contract RewardLiquidityPool is
         if (_liquidity == 0) return;
         if (block.timestamp <= lastObservation) return;
 
-        _updateAirdropGrowthGlobal(_liquidity);
+        uint256 duration = rewardDurationAfterLastObservation();
+
+        if (duration > 0) {
+            airdropGrowthGlobal0 += FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
+            airdropGrowthGlobal1 += FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
+            rewardGrowthGlobal_ += FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
+        }
 
         unchecked {
             // Overflow in 2106. Don't do staking rewards in the year 2106.
@@ -686,20 +701,21 @@ contract RewardLiquidityPool is
         }
     }
 
-    function _updateAirdropGrowthGlobal(uint256 _liquidity) internal {
-        (uint256 remain0, uint256 remain1, uint256 rewardRemain) = rewardGrowthRemain(_liquidity);
-        if (remain0 > 0) airdropGrowthGlobal0 += remain0;
-        if (remain1 > 0) airdropGrowthGlobal1 += remain1;
-        if (rewardRemain > 0) rewardGrowthGlobal_ += rewardRemain;
-    }
-
-    function rewardGrowthRemain(uint256 _liquidity) internal view returns (uint256 remain0, uint256 remain1, uint256 rewardRemain) {
-        if (_liquidity == 0) return (0, 0, 0);
+    function airdropGrowthRemain(uint256 _liquidity) internal view returns (uint256 remain0, uint256 remain1) {
+        if (_liquidity == 0) return (0, 0);
 
         uint256 duration = rewardDurationAfterLastObservation();
         unchecked {
             remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
             remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
+        }
+    }
+
+    function rewardGrowthRemain(uint256 _liquidity) internal view returns (uint256 rewardRemain) {
+        if (_liquidity == 0) return 0;
+
+        uint256 duration = rewardDurationAfterLastObservation();
+        unchecked {
             rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
         }
     }
@@ -748,64 +764,87 @@ contract RewardLiquidityPool is
         int24 upper,
         int128 amount
     ) internal {
+        _updatePositionFee(owner, lower, upper);
+        _updatePositionReward(owner, lower, upper);
+
+        if (amount > 0) {
+            positions[owner][lower][upper].liquidity += uint128(amount);
+            // Prevents a global liquidity overflow in even if all ticks are initialised.
+            if (positions[owner][lower][upper].liquidity > MAX_TICK_LIQUIDITY) revert LiquidityOverflow();
+        } else if (amount < 0) {
+            positions[owner][lower][upper].liquidity -= uint128(-amount);
+        }
+    }
+
+    function _updatePositionFee(address owner, int24 lower, int24 upper) private {
         Position storage position = positions[owner][lower][upper];
-        PositionReward storage positionReward = positionRewards[owner][lower][upper];
-        (uint256 rangeFeeGrowth0, uint256 rangeFeeGrowth1, uint256 rewardGrowth) = rangeFeeGrowth(lower, upper);
+        (uint256 rangeFeeGrowth0, uint256 rangeFeeGrowth1) = rangeFeeGrowth(lower, upper);
 
         uint256 amount0Fees;
         uint256 amount1Fees;
-        uint256 amountReward;
         unchecked {
             // @dev underflow is intended.
-            amount0Fees = feeInRange(rangeFeeGrowth0 - position.feeGrowthInside0Last, position.liquidity);
-            amount1Fees = feeInRange(rangeFeeGrowth1 - position.feeGrowthInside1Last, position.liquidity);
-            amountReward = feeInRange(rewardGrowth - positionReward.rewardGrowthInsideLast, position.liquidity);
-        }
-
-        if (amount > 0) {
-            position.liquidity += uint128(amount);
-            // Prevents a global liquidity overflow in even if all ticks are initialised.
-            if (position.liquidity > MAX_TICK_LIQUIDITY) revert LiquidityOverflow();
-        } else if (amount < 0) {
-            position.liquidity -= uint128(-amount);
+            amount0Fees = amountInRange(rangeFeeGrowth0 - position.feeGrowthInside0Last, position.liquidity);
+            amount1Fees = amountInRange(rangeFeeGrowth1 - position.feeGrowthInside1Last, position.liquidity);
         }
 
         position.feeGrowthInside0Last = rangeFeeGrowth0;
         position.feeGrowthInside1Last = rangeFeeGrowth1;
-        positionReward.rewardGrowthInsideLast = rewardGrowth;
         position.feeOwed0 += uint128(amount0Fees);
         position.feeOwed1 += uint128(amount1Fees);
+    }
+
+    function _updatePositionReward(address owner, int24 lower, int24 upper) private {
+        uint256 rewardGrowth = rangeRewardGrowth(lower, upper);
+        PositionReward storage positionReward = positionRewards[owner][lower][upper];
+
+        uint256 amountReward;
+        unchecked {
+            // @dev underflow is intended.
+            amountReward = amountInRange(rewardGrowth - positionReward.rewardGrowthInsideLast, positions[owner][lower][upper].liquidity);
+        }
+
+        positionReward.rewardGrowthInsideLast = rewardGrowth;
         positionReward.rewardOwed += uint128(amountReward);
     }
 
-    function feeInRange(uint256 feeGrowth, uint256 _liquidity) internal pure returns (uint256) {
-        return FullMath.mulDiv(feeGrowth, _liquidity, FixedPoint.Q128);
+    function amountInRange(uint256 rangeGrowth, uint256 _liquidity) internal pure returns (uint256) {
+        return FullMath.mulDiv(rangeGrowth, _liquidity, FixedPoint.Q128);
     }
 
-    function _collectFromOwed(
+    function _collectFee(
         address owner,
         int24 lower,
         int24 upper,
         uint256 desiredToken0Fees,
-        uint256 desiredToken1Fees,
-        uint256 desiredReward
+        uint256 desiredToken1Fees
     )
         internal
         returns (
             uint256 token0Amount,
-            uint256 token1Amount,
-            uint256 rewardAmount
+            uint256 token1Amount
         )
     {
         Position storage position = positions[owner][lower][upper];
-        PositionReward storage positionReward = positionRewards[owner][lower][upper];
 
         token0Amount = Math.min(position.feeOwed0, desiredToken0Fees);
         token1Amount = Math.min(position.feeOwed1, desiredToken1Fees);
-        rewardAmount = Math.min(positionReward.rewardOwed, desiredReward);
 
         position.feeOwed0 -= uint128(token0Amount);
         position.feeOwed1 -= uint128(token1Amount);
+    }
+
+    function _collectReward(
+        address owner,
+        int24 lower,
+        int24 upper,
+        uint256 desiredReward
+    ) internal returns (uint256 rewardAmount)
+    {
+        PositionReward storage positionReward = positionRewards[owner][lower][upper];
+
+        rewardAmount = Math.min(positionReward.rewardOwed, desiredReward);
+
         positionReward.rewardOwed -= uint128(rewardAmount);
     }
 
@@ -855,8 +894,7 @@ contract RewardLiquidityPool is
         view
         returns (
             uint256 feeGrowthInside0,
-            uint256 feeGrowthInside1,
-            uint256 rewardGrowthInside
+            uint256 feeGrowthInside1
         )
     {
         int24 currentTick = TickMath.getTickAtSqrtRatio(price);
@@ -867,35 +905,28 @@ contract RewardLiquidityPool is
         // Calculate fee growth below & above.
         uint256 _feeGrowthGlobal0;
         uint256 _feeGrowthGlobal1;
-        uint256 _rewardGrowthGlobal;
         {
-            (uint256 remain0, uint256 remain1, uint256 rewardRemain) = rewardGrowthRemain(liquidity);
+            (uint256 remain0, uint256 remain1) = airdropGrowthRemain(liquidity);
             _feeGrowthGlobal0 = swapFeeGrowthGlobal0 + airdropGrowthGlobal0 + remain0;
             _feeGrowthGlobal1 = swapFeeGrowthGlobal1 + airdropGrowthGlobal1 + remain1;
-            _rewardGrowthGlobal = rewardGrowthGlobal_ + rewardRemain;
         }
 
         uint256 feeGrowthOutside0;
         uint256 feeGrowthOutside1;
-        uint256 rewardGrowthOutside;
         if (lowerTick <= currentTick) {
             feeGrowthOutside0 += lower.feeGrowthOutside0;
             feeGrowthOutside1 += lower.feeGrowthOutside1;
-            rewardGrowthOutside += rewardGrowthOutsidePerTicks[lowerTick];
         } else {
             feeGrowthOutside0 += _feeGrowthGlobal0 - lower.feeGrowthOutside0;
             feeGrowthOutside1 += _feeGrowthGlobal1 - lower.feeGrowthOutside1;
-            rewardGrowthOutside += _rewardGrowthGlobal - rewardGrowthOutsidePerTicks[lowerTick];
         }
 
         if (currentTick < upperTick) {
             feeGrowthOutside0 += upper.feeGrowthOutside0;
             feeGrowthOutside1 += upper.feeGrowthOutside1;
-            rewardGrowthOutside += rewardGrowthOutsidePerTicks[upperTick];
         } else {
             feeGrowthOutside0 += _feeGrowthGlobal0 - upper.feeGrowthOutside0;
             feeGrowthOutside1 += _feeGrowthGlobal1 - upper.feeGrowthOutside1;
-            rewardGrowthOutside += _rewardGrowthGlobal - rewardGrowthOutsidePerTicks[upperTick];
         }
 
         unchecked {
@@ -903,6 +934,34 @@ contract RewardLiquidityPool is
             // reference : https://github.com/code-423n4/2021-09-sushitrident-2-findings/issues/13
             feeGrowthInside0 = _feeGrowthGlobal0 - feeGrowthOutside0;
             feeGrowthInside1 = _feeGrowthGlobal1 - feeGrowthOutside1;
+        }
+    }
+
+    /// @dev Generic formula for reward growth inside a range: (globalGrowth - growthBelow - growthAbove)
+    /// same as rangeFeeGrowth
+    function rangeRewardGrowth(int24 lowerTick, int24 upperTick) public view returns (uint256 rewardGrowthInside)
+    {
+        int24 currentTick = TickMath.getTickAtSqrtRatio(price);
+
+        // Calculate reward growth below & above.
+        uint256 _rewardGrowthGlobal = rewardGrowthGlobal_ + rewardGrowthRemain(liquidity);
+
+        uint256 rewardGrowthOutside;
+        if (lowerTick <= currentTick) {
+            rewardGrowthOutside += rewardGrowthOutsidePerTicks[lowerTick];
+        } else {
+            rewardGrowthOutside += _rewardGrowthGlobal - rewardGrowthOutsidePerTicks[lowerTick];
+        }
+
+        if (currentTick < upperTick) {
+            rewardGrowthOutside += rewardGrowthOutsidePerTicks[upperTick];
+        } else {
+            rewardGrowthOutside += _rewardGrowthGlobal - rewardGrowthOutsidePerTicks[upperTick];
+        }
+
+        unchecked {
+            // @dev underflow is intended
+            // reference : https://github.com/code-423n4/2021-09-sushitrident-2-findings/issues/13
             rewardGrowthInside = _rewardGrowthGlobal - rewardGrowthOutside;
         }
     }
@@ -950,16 +1009,16 @@ contract RewardLiquidityPool is
     }
 
     function _feeGrowthGlobal(
-        uint256 _swapFeeGrowthGlobal,
-        uint256 _airdropGrowthGlobal,
-        uint256 _airdropPerSecond
+        uint256 _baseGrowthGlobal,
+        uint256 _additionalGrowthGlobal,
+        uint256 _additionalPerSecond
     ) internal view returns (uint256) {
         uint256 duration = rewardDurationAfterLastObservation();
         uint256 _liquidity = liquidity;
         if (duration > 0 && _liquidity > 0) {
-            return _swapFeeGrowthGlobal + _airdropGrowthGlobal + FullMath.mulDiv(_airdropPerSecond, duration, _liquidity);
+            return _baseGrowthGlobal + _additionalGrowthGlobal + FullMath.mulDiv(_additionalPerSecond, duration, _liquidity);
         } else {
-            return _swapFeeGrowthGlobal + _airdropGrowthGlobal;
+            return _baseGrowthGlobal + _additionalGrowthGlobal;
         }
     }
 
