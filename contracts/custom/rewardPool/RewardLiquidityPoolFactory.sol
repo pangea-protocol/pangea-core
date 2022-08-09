@@ -60,7 +60,7 @@ contract RewardLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLiquidit
     function deployPool(bytes memory _deployData) external returns (address pool) {
         if (msg.sender != masterDeployer) revert UnauthorisedDeployer();
 
-        (address tokenA, address tokenB,address rewardToken, uint24 swapFee, uint160 price, uint24 tickSpacing) = abi.decode(
+        (address tokenA, address tokenB, address rewardToken, uint24 swapFee, uint160 price, uint24 tickSpacing) = abi.decode(
             _deployData,
             (address, address, address, uint24, uint160, uint24)
         );

@@ -83,7 +83,7 @@ contract RewardLiquidityPool is
     uint256 public airdrop1PerSecond;
 
     uint256 public airdropStartTime;
-    uint256 internal airdropPeriod;
+    uint256 public airdropPeriod;
 
     /// @dev related to reward Token System
     address public immutable rewardToken;
