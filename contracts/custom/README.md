@@ -1,10 +1,17 @@
-// SPDX-License-Identifier: GPL-3.0
+### Custom Pools for Pangeaswap
 
-pragma solidity >=0.8.0;
+Custom pools are pools with extension features added to the functionality of the Pangea pool.
 
-import "./IRewardLiquidityPoolStruct.sol";
-import "../../../interfaces/IConcentratedLiquidityPool.sol";
 
+
+1. [rewardPool](/rewardPool)
+
+Rewards are often given when the protocol try to increase the liquidity volume of the target pool. The Pangeaswap pool supports airdrops, 
+but there is a limitation that airdrops are only possible with the tokens that make up the pool.
+
+RewardPool is a custom pool that allows tokens other than airdrop tokens to be used as rewards. 
+
+````solidity
 /// @notice Reward Liquidity Pool interface.
 interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool  {
 
@@ -33,3 +40,4 @@ interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiqui
         uint256 desiredReward
     ) external returns (uint256 rewardAmount);
 }
+````

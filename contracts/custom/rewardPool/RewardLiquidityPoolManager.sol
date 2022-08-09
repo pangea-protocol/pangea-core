@@ -56,6 +56,7 @@ contract RewardLiquidityPoolManager is
 
     /// @notice the position information associated with a given token ID.
     mapping(uint256 => Position) public positions;
+    mapping(uint256 => PositionReward) public positionRewards;
 
     error InvalidPool();
     error NotNativePool();
@@ -229,7 +230,7 @@ contract RewardLiquidityPoolManager is
         if (positionId == 0) {
             // We mint a new NFT.
             _positionId = nftCount.minted;
-            (uint256 feeGrowthInside0, uint256 feeGrowthInside1, uint256 rewardGrowthInside) = pool.rangeFeeGrowth(lower, upper);
+            (uint256 feeGrowthInside0, uint256 feeGrowthInside1) = pool.rangeFeeGrowth(lower, upper);
             positions[_positionId] = Position({
                 pool: address(pool),
                 liquidity: liquidityMinted,
@@ -238,9 +239,11 @@ contract RewardLiquidityPoolManager is
                 latestAddition: uint32(block.timestamp),
                 feeGrowthInside0: feeGrowthInside0,
                 feeGrowthInside1: feeGrowthInside1,
-                rewardGrowthInside: rewardGrowthInside,
                 feeOwed0: 0,
-                feeOwed1: 0,
+                feeOwed1: 0
+            });
+            positionRewards[_positionId] = PositionReward({
+                rewardGrowthInside: pool.rangeRewardGrowth(lower, upper),
                 rewardOwed: 0
             });
             mint(msg.sender);
@@ -253,7 +256,8 @@ contract RewardLiquidityPoolManager is
             if (position.lower != lower || position.upper != upper) revert RangeMisMatch();
             if (!_isApprovedOrOwner(msg.sender, _positionId)) revert NotAllowed();
 
-            _settleFeeAndReward(_positionId);
+            _settleFee(_positionId);
+            _settleReward(_positionId);
 
             position.liquidity += liquidityMinted;
             // Incentives should be claimed first.
@@ -291,7 +295,9 @@ contract RewardLiquidityPoolManager is
         if (!_isApprovedOrOwner(msg.sender, positionId)) revert NotAllowed();
 
         Position memory position = positions[positionId];
-        _settleFeeAndReward(positionId);
+        _settleFee(positionId);
+        _settleReward(positionId);
+
         if (amount < position.liquidity) {
             (token0Amount, token1Amount) = IRewardLiquidityPool(position.pool).burn(position.lower, position.upper, amount);
             positions[positionId].liquidity -= amount;
@@ -301,6 +307,8 @@ contract RewardLiquidityPoolManager is
             // if user burn all liquidity, collect fee first
             // slither-disable-next-line reentrancy-eth
             _collect(positionId, recipient, unwrap);
+            // slither-disable-next-line reentrancy-eth
+            _collectReward(positionId, recipient, unwrap);
             burn(positionId);
             delete positions[positionId];
         }
@@ -319,48 +327,82 @@ contract RewardLiquidityPoolManager is
         uint256 positionId,
         address recipient,
         bool unwrap
-    ) external nonReentrant returns (uint256 token0Amount, uint256 token1Amount, uint256 rewardAmount) {
+    ) external nonReentrant returns (uint256 token0Amount, uint256 token1Amount) {
         if (!_isApprovedOrOwner(msg.sender, positionId)) revert NotAllowed();
-        _settleFeeAndReward(positionId);
+        _settleFee(positionId);
         return _collect(positionId, recipient, unwrap);
     }
 
-    function _settleFeeAndReward(uint256 positionId) internal {
+    function collectReward(
+        uint256 positionId,
+        address recipient,
+        bool unwrap
+    ) external nonReentrant returns (uint256 rewardAmount) {
+        if (!_isApprovedOrOwner(msg.sender, positionId)) revert NotAllowed();
+        _settleReward(positionId);
+        return _collectReward(positionId, recipient, unwrap);
+    }
+
+    function _settleFee(uint256 positionId) internal {
         (uint256 allocatedFee0,
          uint256 allocatedFee1,
-         uint256 allocatedReward,
          uint256 feeGrowthInside0,
-         uint256 feeGrowthInside1,
-         uint256 rewardGrowthInside) = positionFees(positionId);
+         uint256 feeGrowthInside1) = positionFees(positionId);
 
         Position storage position = positions[positionId];
         position.feeOwed0 = allocatedFee0;
         position.feeOwed1 = allocatedFee1;
-        position.rewardOwed = allocatedReward;
         position.feeGrowthInside0 = feeGrowthInside0;
         position.feeGrowthInside1 = feeGrowthInside1;
-        position.rewardGrowthInside = rewardGrowthInside;
+    }
+
+    function _settleReward(uint256 positionId) internal {
+        (uint256 allocatedReward, uint256 rewardGrowthInside) = positionRewardAmount(positionId);
+
+        PositionReward storage positionReward = positionRewards[positionId];
+        positionReward.rewardOwed = allocatedReward;
+        positionReward.rewardGrowthInside = rewardGrowthInside;
     }
 
     function _collect(
         uint256 positionId,
         address recipient,
         bool unwrap
-    ) internal returns (uint256 token0amount, uint256 token1amount, uint256 rewardAmount) {
+    ) internal returns (uint256 token0amount, uint256 token1amount) {
         Position storage position = positions[positionId];
-        (token0amount, token1amount, rewardAmount) = IRewardLiquidityPool(position.pool).collect(
+        (token0amount, token1amount) = IRewardLiquidityPool(position.pool).collect(
             position.lower,
             position.upper,
             position.feeOwed0,
-            position.feeOwed1,
-            position.rewardOwed
+            position.feeOwed1
         );
         position.feeOwed0 = 0;
         position.feeOwed1 = 0;
-        position.rewardOwed = 0;
+
         _transferBoth(position.pool, recipient, token0amount, token1amount, unwrap);
-        _transferToken(IRewardLiquidityPool(position.pool).rewardToken(), recipient, rewardAmount);
-        emit CollectFeeWithReward(position.pool, recipient, positionId, token0amount, token1amount, rewardAmount);
+        emit CollectFee(position.pool, recipient, positionId, token0amount, token1amount);
+    }
+
+    function _collectReward(
+        uint256 positionId,
+        address recipient,
+        bool unwrap
+    ) internal returns (uint256 rewardAmount) {
+        Position storage position = positions[positionId];
+        rewardAmount = IRewardLiquidityPool(position.pool).collectReward(
+            position.lower,
+            position.upper,
+            positionRewards[positionId].rewardOwed
+        );
+        positionRewards[positionId].rewardOwed = 0;
+
+        address rewardToken = IRewardLiquidityPool(position.pool).rewardToken();
+        if (unwrap && rewardToken == wETH) {
+            _transferOutETH(recipient, rewardAmount);
+        } else {
+            _transferToken(rewardToken, recipient, rewardAmount);
+        }
+        emit CollectReward(position.pool, recipient, positionId, rewardAmount);
     }
 
     /// @notice Returns the claimable fees and the fee growth accumulators of a given position
@@ -370,20 +412,35 @@ contract RewardLiquidityPoolManager is
         returns (
             uint256 token0amount,
             uint256 token1amount,
-            uint256 rewardAmount,
             uint256 feeGrowthInside0,
-            uint256 feeGrowthInside1,
-            uint256 rewardGrowthInside
+            uint256 feeGrowthInside1
         )
     {
         Position memory position = positions[positionId];
 
-        (feeGrowthInside0, feeGrowthInside1, rewardGrowthInside) = IRewardLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
+        (feeGrowthInside0, feeGrowthInside1) = IRewardLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
             token0amount = FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) + position.feeOwed0;
             token1amount = FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) + position.feeOwed1;
-            rewardAmount = FullMath.mulDiv(rewardGrowthInside - position.rewardGrowthInside, position.liquidity, FixedPoint.Q128) + position.rewardOwed;
+        }
+    }
+
+    function positionRewardAmount(uint256 positionId)
+        public
+        view
+        returns (
+            uint256 rewardAmount,
+            uint256 rewardGrowthInside
+        )
+    {
+        Position memory position = positions[positionId];
+        PositionReward memory positionReward = positionRewards[positionId];
+
+        rewardGrowthInside = IRewardLiquidityPool(position.pool).rangeRewardGrowth(position.lower, position.upper);
+        unchecked {
+            // @dev underflow is intended.
+            rewardAmount = FullMath.mulDiv(rewardGrowthInside - positionReward.rewardGrowthInside, position.liquidity, FixedPoint.Q128) + positionReward.rewardOwed;
         }
     }
 
