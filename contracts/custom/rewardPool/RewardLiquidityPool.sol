@@ -34,8 +34,7 @@ import "../../libraries/FixedPoint.sol";
 import "./libraries/RewardTicks.sol";
 import "./interfaces/IRewardLiquidityPoolStruct.sol";
 
-/// @notice Concentrated liquidity pool implementation.
-/// @dev Based on Trident source code - Concentrated Liquidity Pool
+/// @notice Custom Pool : Reward liquidity pool, it's for liquidity mining using reward token
 contract RewardLiquidityPool is
     IRewardLiquidityPoolStruct,
     IConcentratedLiquidityPoolStruct,
@@ -87,8 +86,11 @@ contract RewardLiquidityPool is
 
     /// @dev related to reward Token System
     address public immutable rewardToken;
+
+    /// @dev reward fee growth counters are multiplied by 2 ^ 128.
     uint256 internal rewardGrowthGlobal_;
     uint256 public rewardPerSecond;
+    /// @dev amount of the deposited reward, it'll be distributed on next airdrop epoch
     uint128 public depositedReward;
 
     uint128 internal token0ProtocolFee;
@@ -109,6 +111,8 @@ contract RewardLiquidityPool is
     mapping(int24 => uint256) public rewardGrowthOutsidePerTicks;
 
     mapping(address => mapping(int24 => mapping(int24 => Position))) public positions;
+
+    /// @dev reward information per position (rewardGrowthInsideLast & rewardOwed)
     mapping(address => mapping(int24 => mapping(int24 => PositionReward))) public positionRewards;
 
     uint256 public immutable createdTime;
@@ -352,6 +356,7 @@ contract RewardLiquidityPool is
     /// @dev Swaps one token for another. The router must prefund this contract and ensure there isn't too much slippage.
     function swap(bytes memory data) external lock returns (uint256 amountOut) {
         (bool zeroForOne, address recipient) = abi.decode(data, (bool, address));
+
         uint256 inAmount = _balance(zeroForOne ? token0 : token1) - (zeroForOne ? reserve0 : reserve1);
 
         SwapCache memory cache = SwapCache({
@@ -632,7 +637,7 @@ contract RewardLiquidityPool is
         }
 
         // distribute previous epoch airdrop if exist
-        if (rewardDurationAfterLastObservation() > 0) {
+        if (airdropDurationAfterLastObservation() > 0) {
             // update Record & distribute airdrop
             _updateObservationRecord();
 
@@ -684,9 +689,11 @@ contract RewardLiquidityPool is
     function _updateObservationRecord() internal {
         uint256 _liquidity = liquidity;
         if (_liquidity == 0) return;
-        if (block.timestamp <= lastObservation) return;
 
-        uint256 duration = rewardDurationAfterLastObservation();
+        uint256 _lastObservation = uint256(lastObservation);
+        if (block.timestamp <= _lastObservation) return;
+
+        uint256 duration = airdropDurationAfterLastObservation();
 
         if (duration > 0) {
             airdropGrowthGlobal0 += FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
@@ -697,24 +704,24 @@ contract RewardLiquidityPool is
         unchecked {
             // Overflow in 2106. Don't do staking rewards in the year 2106.
             lastObservation = uint32(block.timestamp);
-            secondsGrowthGlobal += uint160(((block.timestamp - lastObservation) << FixedPoint.Q128RES) / _liquidity);
+            secondsGrowthGlobal += uint160(((block.timestamp - _lastObservation) << FixedPoint.Q128RES) / _liquidity);
         }
     }
 
-    function airdropGrowthRemain(uint256 _liquidity) internal view returns (uint256 remain0, uint256 remain1) {
+    function airdropGrowthRemain(uint256 _liquidity) private view returns (uint256 remain0, uint256 remain1) {
         if (_liquidity == 0) return (0, 0);
 
-        uint256 duration = rewardDurationAfterLastObservation();
+        uint256 duration = airdropDurationAfterLastObservation();
         unchecked {
             remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
             remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
         }
     }
 
-    function rewardGrowthRemain(uint256 _liquidity) internal view returns (uint256 rewardRemain) {
+    function rewardGrowthRemain(uint256 _liquidity) private view returns (uint256 rewardRemain) {
         if (_liquidity == 0) return 0;
 
-        uint256 duration = rewardDurationAfterLastObservation();
+        uint256 duration = airdropDurationAfterLastObservation();
         unchecked {
             rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
         }
@@ -766,14 +773,7 @@ contract RewardLiquidityPool is
     ) internal {
         _updatePositionFee(owner, lower, upper);
         _updatePositionReward(owner, lower, upper);
-
-        if (amount > 0) {
-            positions[owner][lower][upper].liquidity += uint128(amount);
-            // Prevents a global liquidity overflow in even if all ticks are initialised.
-            if (positions[owner][lower][upper].liquidity > MAX_TICK_LIQUIDITY) revert LiquidityOverflow();
-        } else if (amount < 0) {
-            positions[owner][lower][upper].liquidity -= uint128(-amount);
-        }
+        _updatePositionLiquidity(owner, lower, upper, amount);
     }
 
     function _updatePositionFee(address owner, int24 lower, int24 upper) private {
@@ -795,8 +795,8 @@ contract RewardLiquidityPool is
     }
 
     function _updatePositionReward(address owner, int24 lower, int24 upper) private {
-        uint256 rewardGrowth = rangeRewardGrowth(lower, upper);
         PositionReward storage positionReward = positionRewards[owner][lower][upper];
+        uint256 rewardGrowth = rangeRewardGrowth(lower, upper);
 
         uint256 amountReward;
         unchecked {
@@ -806,6 +806,19 @@ contract RewardLiquidityPool is
 
         positionReward.rewardGrowthInsideLast = rewardGrowth;
         positionReward.rewardOwed += uint128(amountReward);
+    }
+
+    function _updatePositionLiquidity(address owner, int24 lower, int24 upper, int128 amount) private {
+        if (amount == 0) return;
+
+        Position storage position = positions[owner][lower][upper];
+        if (amount > 0) {
+            position.liquidity += uint128(amount);
+            // Prevents a global liquidity overflow in even if all ticks are initialised.
+            if (position.liquidity > MAX_TICK_LIQUIDITY) revert LiquidityOverflow();
+        } else {
+            position.liquidity -= uint128(-amount);
+        }
     }
 
     function amountInRange(uint256 rangeGrowth, uint256 _liquidity) internal pure returns (uint256) {
@@ -850,7 +863,9 @@ contract RewardLiquidityPool is
 
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize check
     function _balance(address token) internal view returns (uint256 balance) {
-        return IERC20(token).balanceOf(address(this));
+        (bool success, bytes memory data) = token.staticcall(abi.encodeWithSelector(IERC20.balanceOf.selector, address(this)));
+        require(success && data.length >= 32);
+        return abi.decode(data, (uint256));
     }
 
     function _transferFromMsgSender(address token, uint256 amount) internal {
@@ -889,14 +904,7 @@ contract RewardLiquidityPool is
     /// @notice Calculates the total fee growth inside a range (per unit of liquidity).
     /// @dev Multiply `rangeFeeGrowth` delta by the provided liquidity to get accrued fees for some period.
     /// @dev if lowerTick or upperTick isn't initialized, rangeFeeGrowth is calculated incorrectly
-    function rangeFeeGrowth(int24 lowerTick, int24 upperTick)
-        public
-        view
-        returns (
-            uint256 feeGrowthInside0,
-            uint256 feeGrowthInside1
-        )
-    {
+    function rangeFeeGrowth(int24 lowerTick, int24 upperTick) public view returns (uint256 feeGrowthInside0, uint256 feeGrowthInside1) {
         int24 currentTick = TickMath.getTickAtSqrtRatio(price);
 
         Tick memory lower = ticks[lowerTick];
@@ -1013,7 +1021,7 @@ contract RewardLiquidityPool is
         uint256 _additionalGrowthGlobal,
         uint256 _additionalPerSecond
     ) internal view returns (uint256) {
-        uint256 duration = rewardDurationAfterLastObservation();
+        uint256 duration = airdropDurationAfterLastObservation();
         uint256 _liquidity = liquidity;
         if (duration > 0 && _liquidity > 0) {
             return _baseGrowthGlobal + _additionalGrowthGlobal + FullMath.mulDiv(_additionalPerSecond, duration, _liquidity);
@@ -1022,21 +1030,21 @@ contract RewardLiquidityPool is
         }
     }
 
-    function rewardDurationAfterLastObservation() internal view returns (uint256) {
-        uint256 _rewardStartTime = airdropStartTime;
-        if (_rewardStartTime >= block.timestamp) {
+    function airdropDurationAfterLastObservation() internal view returns (uint256) {
+        uint256 _airdropStartTime = airdropStartTime;
+        if (_airdropStartTime >= block.timestamp) {
             // airdrop is not started
             return 0;
         }
 
         uint256 _lastObservation = lastObservation;
-        uint256 _rewardEndTime = _rewardStartTime + airdropPeriod;
-        if (_rewardEndTime <= _lastObservation) {
+        uint256 _airdropEndTime = _airdropStartTime + airdropPeriod;
+        if (_airdropEndTime <= _lastObservation) {
             // airdrop is ended
             return 0;
         }
 
-        return Math.min(block.timestamp, _rewardEndTime) - Math.max(_lastObservation, _rewardStartTime);
+        return Math.min(block.timestamp, _airdropEndTime) - Math.max(_lastObservation, _airdropStartTime);
     }
 
     function getPriceAndNearestTicks() external view returns (uint160 _price, int24 _nearestTick) {
