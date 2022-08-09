@@ -156,7 +156,34 @@ const config: HardhatUserConfig = {
             runs: 2000,
           },
         }
-      }
+      },
+      "contracts/custom/rewardPool/RewardLiquidityPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        }
+      },
+      "contracts/custom/rewardPool/RewardLiquidityPoolFactoryLib.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1500,
+          },
+        }
+      },
+      "contracts/custom/rewardPool/RewardLiquidityPoolManager.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1500,
+          },
+        }
+      },
     }
   },
   dodoc: {
