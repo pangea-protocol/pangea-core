@@ -995,72 +995,59 @@ describe("SCENARIO:EDGE CASE", function () {
     });
 
     it("TEST 1) price range : -10 ~ -9 ", async () => {
-      await expect(
-        addLiquidity(-10 * TICK_SPACING, -9 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-10 * TICK_SPACING, -9 * TICK_SPACING)).to.be
+        .not.reverted;
 
-      await expect(
-        addLiquidity(-10 * TICK_SPACING, -7 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-10 * TICK_SPACING, -7 * TICK_SPACING)).to.be
+        .not.reverted;
 
-      await expect(
-        addLiquidity(-10 * TICK_SPACING, -5 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-10 * TICK_SPACING, -5 * TICK_SPACING)).to.be
+        .not.reverted;
     });
 
     it("TEST 2) price range : -2 ~ -1 ", async () => {
-      await expect(
-        addLiquidity(-4 * TICK_SPACING, -1 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-4 * TICK_SPACING, -1 * TICK_SPACING)).to.be.not
+        .reverted;
 
-      await expect(
-        addLiquidity(-4 * TICK_SPACING, -3 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-4 * TICK_SPACING, -3 * TICK_SPACING)).to.be.not
+        .reverted;
 
-      await expect(
-        addLiquidity(-10 * TICK_SPACING, -3 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-10 * TICK_SPACING, -3 * TICK_SPACING)).to.be
+        .not.reverted;
     });
 
     it("TEST 3) price range : 2 ~ 3 ", async () => {
-      await expect(
-        addLiquidity(2 * TICK_SPACING, 3 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(2 * TICK_SPACING, 3 * TICK_SPACING)).to.be.not
+        .reverted;
 
-      await expect(
-          addLiquidity(2 * TICK_SPACING, 7 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(2 * TICK_SPACING, 7 * TICK_SPACING)).to.be.not
+        .reverted;
     });
 
     it("TEST 4) price range : 6 ~ 9 ", async () => {
-      await expect(
-        addLiquidity(6 * TICK_SPACING, 9 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(6 * TICK_SPACING, 9 * TICK_SPACING)).to.be.not
+        .reverted;
     });
 
     it("TEST 5) price range : -8 ~ -3 ", async () => {
       console.log("1 case");
-      await expect(
-        addLiquidity(-8 * TICK_SPACING, -3 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-8 * TICK_SPACING, -3 * TICK_SPACING)).to.be.not
+        .reverted;
       await increaseTime(10_000);
 
       console.log("2 case");
-      await expect(
-        addLiquidity(-8 * TICK_SPACING, -5 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-8 * TICK_SPACING, -5 * TICK_SPACING)).to.be.not
+        .reverted;
       await increaseTime(10_000);
 
       console.log("3 case");
-      await expect(
-        addLiquidity(-8 * TICK_SPACING, -1 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-8 * TICK_SPACING, -1 * TICK_SPACING)).to.be.not
+        .reverted;
       await increaseTime(10_000);
 
       console.log("4 case");
-      await expect(
-        addLiquidity(-10 * TICK_SPACING, -3 * TICK_SPACING)
-      ).to.be.not.reverted;
+      await expect(addLiquidity(-10 * TICK_SPACING, -3 * TICK_SPACING)).to.be
+        .not.reverted;
       await increaseTime(10_000);
     });
 
@@ -1070,7 +1057,6 @@ describe("SCENARIO:EDGE CASE", function () {
     });
   });
 
-
   /*
    *                                         CURRENT PRICE
    *                                                |
@@ -1079,8 +1065,7 @@ describe("SCENARIO:EDGE CASE", function () {
    *                |<------------------------------LP0-------------------------------->|
    *
    */
-  describe('# UNDERFLOW SCENARIO CASE', function () {
-
+  describe("# UNDERFLOW SCENARIO CASE", function () {
     let baseLP: BigNumber;
 
     let airdrop0 = ethers.utils.parseEther("1000");
@@ -1093,16 +1078,16 @@ describe("SCENARIO:EDGE CASE", function () {
       let startTime = (await ethers.provider.getBlock("latest")).timestamp + 10;
       let period = 604_800;
       await token0
-          .connect(airdropManager)
-          .mint(airdropManager.address, airdrop0);
+        .connect(airdropManager)
+        .mint(airdropManager.address, airdrop0);
       await token1
-          .connect(airdropManager)
-          .mint(airdropManager.address, airdrop1);
+        .connect(airdropManager)
+        .mint(airdropManager.address, airdrop1);
       await token0.connect(airdropManager).approve(pool.address, airdrop0);
       await token1.connect(airdropManager).approve(pool.address, airdrop1);
       await pool
-          .connect(airdropManager)
-          .depositAirdrop(airdrop0, airdrop1, startTime, period);
+        .connect(airdropManager)
+        .depositAirdrop(airdrop0, airdrop1, startTime, period);
       await setNextTimeStamp(startTime + 100_000);
     });
 
@@ -1111,7 +1096,11 @@ describe("SCENARIO:EDGE CASE", function () {
 
       // First, price goes up ( 0 * TICK_SPACING => 4 * TICK_SPACING)
       {
-        const {token1}= await tokenBetween(baseLP, 0 * TICK_SPACING, 4 * TICK_SPACING)
+        const { token1 } = await tokenBetween(
+          baseLP,
+          0 * TICK_SPACING,
+          4 * TICK_SPACING
+        );
         await swapToken1ToToken0(token1);
       }
 
@@ -1121,7 +1110,11 @@ describe("SCENARIO:EDGE CASE", function () {
 
       // Third, price goes up again (4 * TICK_SPACING => 5 * TICK_SPACING)
       {
-        const {token1}= await tokenBetween(baseLP, 4 * TICK_SPACING, 5 * TICK_SPACING)
+        const { token1 } = await tokenBetween(
+          baseLP,
+          4 * TICK_SPACING,
+          5 * TICK_SPACING
+        );
         await swapToken1ToToken0(token1);
         await increaseTime(10_000); // for airdrop
       }
@@ -1132,54 +1125,93 @@ describe("SCENARIO:EDGE CASE", function () {
       const bobPositionId = 3; // token ID 3
 
       let positionFee = await poolManager.positionFees(bobPositionId);
-      let rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
-      console.log(`BOB's initial positionFee Info`)
+      let rangeFeeGrowth = await pool.rangeFeeGrowth(
+        2 * TICK_SPACING,
+        3 * TICK_SPACING
+      );
+      console.log(`BOB's initial positionFee Info`);
       console.log(`token0           : ${positionFee.token0amount}`);
-      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
-      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
-      console.log(`--------------\n`)
+      console.log(
+        `feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`
+      );
+      console.log(
+        `rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`
+      );
+      console.log(`--------------\n`);
 
       // Third, price goes down (5 * TICK_SPACING => 0 * TICK_SPACING)
       {
-        let {token0} = await tokenBetween(baseLP, 3 * TICK_SPACING, 5 * TICK_SPACING)
+        let { token0 } = await tokenBetween(
+          baseLP,
+          3 * TICK_SPACING,
+          5 * TICK_SPACING
+        );
         await swapToken0ToToken1(token0);
 
-        token0 = (await tokenBetween(baseLP.add(aliceLP).add(bobLP), 2 * TICK_SPACING, 3 * TICK_SPACING)).token0;
+        token0 = (
+          await tokenBetween(
+            baseLP.add(aliceLP).add(bobLP),
+            2 * TICK_SPACING,
+            3 * TICK_SPACING
+          )
+        ).token0;
         await swapToken0ToToken1(token0);
 
-        token0 = (await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING)).token0;
+        token0 = (await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING))
+          .token0;
         await swapToken0ToToken1(token0);
 
         await increaseTime(10_000); // for airdrop
       }
 
       positionFee = await poolManager.positionFees(bobPositionId);
-      rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
-      console.log(`BOB's second positionFee Info`)
+      rangeFeeGrowth = await pool.rangeFeeGrowth(
+        2 * TICK_SPACING,
+        3 * TICK_SPACING
+      );
+      console.log(`BOB's second positionFee Info`);
       console.log(`token0           : ${positionFee.token0amount}`);
-      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
-      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
-      console.log(`--------------\n`)
-
+      console.log(
+        `feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`
+      );
+      console.log(
+        `rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`
+      );
+      console.log(`--------------\n`);
 
       // Third, price goes up again (0 * TICK_SPACING => 2.5 * TICK_SPACING)
       {
-        let token1 = (await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING)).token1;
+        let token1 = (
+          await tokenBetween(baseLP.add(aliceLP), 0, 2 * TICK_SPACING)
+        ).token1;
         await swapToken1ToToken0(token1);
 
-        token1 = (await tokenBetween(baseLP.add(aliceLP).add(bobLP), 2*TICK_SPACING, 2.5 * TICK_SPACING)).token1;
+        token1 = (
+          await tokenBetween(
+            baseLP.add(aliceLP).add(bobLP),
+            2 * TICK_SPACING,
+            2.5 * TICK_SPACING
+          )
+        ).token1;
         await swapToken1ToToken0(token1);
 
         await increaseTime(600_000); // for airdrop
       }
 
       positionFee = await poolManager.positionFees(bobPositionId);
-      rangeFeeGrowth = await pool.rangeFeeGrowth(2 * TICK_SPACING, 3 * TICK_SPACING);
-      console.log(`BOB's third positionFee Info`)
+      rangeFeeGrowth = await pool.rangeFeeGrowth(
+        2 * TICK_SPACING,
+        3 * TICK_SPACING
+      );
+      console.log(`BOB's third positionFee Info`);
       console.log(`token0           : ${positionFee.token0amount}`);
-      console.log(`feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`);
-      console.log(`rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`);
-      console.log(`--------------\n`)
-    })
+      console.log(
+        `feeGrowthInside0 : ${positionFee.feeGrowthInside0} (overflow)`
+      );
+      console.log(
+        `rangeFeeGrowth0  : ${rangeFeeGrowth.feeGrowthInside0} (overflow)`
+      );
+      console.log(`--------------\n`);
+    });
   });
 });

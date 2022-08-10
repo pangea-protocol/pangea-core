@@ -91,14 +91,14 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "address","uint24", "uint160", "uint24"],
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
         [
           tokenN0,
           tokenN1,
           rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
-          BigNumber.from(TICK_SPACING)
+          BigNumber.from(TICK_SPACING),
         ]
       )
     );

@@ -35,11 +35,7 @@ import "./libraries/RewardTicks.sol";
 import "./interfaces/IRewardLiquidityPoolStruct.sol";
 
 /// @notice Custom Pool : Reward liquidity pool, it's for liquidity mining using reward token
-contract RewardLiquidityPool is
-    IRewardLiquidityPoolStruct,
-    IConcentratedLiquidityPoolStruct,
-    IPoolFactoryCallee,
-    LPAirdropCallee {
+contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee {
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -209,10 +205,10 @@ contract RewardLiquidityPool is
             (nearestTick, numOfInserted) = ticks.insert(
                 rewardGrowthOutsidePerTicks,
                 RewardTicks.GrowthVariable(
-                        swapFeeGrowthGlobal0 + airdropGrowthGlobal0,
-                        swapFeeGrowthGlobal1 + airdropGrowthGlobal1,
-                        rewardGrowthGlobal_,
-                        secondsGrowthGlobal
+                    swapFeeGrowthGlobal0 + airdropGrowthGlobal0,
+                    swapFeeGrowthGlobal1 + airdropGrowthGlobal1,
+                    rewardGrowthGlobal_,
+                    secondsGrowthGlobal
                 ),
                 mintParams.lowerOld,
                 mintParams.lower,
@@ -322,14 +318,7 @@ contract RewardLiquidityPool is
         int24 upper,
         uint256 desiredToken0Fees,
         uint256 desiredToken1Fees
-    )
-        external
-        lock
-        returns (
-            uint256 token0Fees,
-            uint256 token1Fees
-        )
-    {
+    ) external lock returns (uint256 token0Fees, uint256 token1Fees) {
         _updatePositionFee(msg.sender, lower, upper);
         (token0Fees, token1Fees) = _collectFee(msg.sender, lower, upper, desiredToken0Fees, desiredToken1Fees);
 
@@ -500,7 +489,11 @@ contract RewardLiquidityPool is
         {} catch {}
     }
 
-    function _cross(SwapCache memory cache, uint256 cachedRewardGrowthGlobal, bool zeroForOne) internal {
+    function _cross(
+        SwapCache memory cache,
+        uint256 cachedRewardGrowthGlobal,
+        bool zeroForOne
+    ) internal {
         (cache.currentLiquidity, cache.nextTickToCross) = ticks.cross(
             rewardGrowthOutsidePerTicks,
             cache.nextTickToCross,
@@ -776,7 +769,11 @@ contract RewardLiquidityPool is
         _updatePositionLiquidity(owner, lower, upper, amount);
     }
 
-    function _updatePositionFee(address owner, int24 lower, int24 upper) private {
+    function _updatePositionFee(
+        address owner,
+        int24 lower,
+        int24 upper
+    ) private {
         Position storage position = positions[owner][lower][upper];
         (uint256 rangeFeeGrowth0, uint256 rangeFeeGrowth1) = rangeFeeGrowth(lower, upper);
 
@@ -794,7 +791,11 @@ contract RewardLiquidityPool is
         position.feeOwed1 += uint128(amount1Fees);
     }
 
-    function _updatePositionReward(address owner, int24 lower, int24 upper) private {
+    function _updatePositionReward(
+        address owner,
+        int24 lower,
+        int24 upper
+    ) private {
         PositionReward storage positionReward = positionRewards[owner][lower][upper];
         uint256 rewardGrowth = rangeRewardGrowth(lower, upper);
 
@@ -808,7 +809,12 @@ contract RewardLiquidityPool is
         positionReward.rewardOwed += uint128(amountReward);
     }
 
-    function _updatePositionLiquidity(address owner, int24 lower, int24 upper, int128 amount) private {
+    function _updatePositionLiquidity(
+        address owner,
+        int24 lower,
+        int24 upper,
+        int128 amount
+    ) private {
         if (amount == 0) return;
 
         Position storage position = positions[owner][lower][upper];
@@ -831,13 +837,7 @@ contract RewardLiquidityPool is
         int24 upper,
         uint256 desiredToken0Fees,
         uint256 desiredToken1Fees
-    )
-        internal
-        returns (
-            uint256 token0Amount,
-            uint256 token1Amount
-        )
-    {
+    ) internal returns (uint256 token0Amount, uint256 token1Amount) {
         Position storage position = positions[owner][lower][upper];
 
         token0Amount = Math.min(position.feeOwed0, desiredToken0Fees);
@@ -852,8 +852,7 @@ contract RewardLiquidityPool is
         int24 lower,
         int24 upper,
         uint256 desiredReward
-    ) internal returns (uint256 rewardAmount)
-    {
+    ) internal returns (uint256 rewardAmount) {
         PositionReward storage positionReward = positionRewards[owner][lower][upper];
 
         rewardAmount = Math.min(positionReward.rewardOwed, desiredReward);
@@ -947,8 +946,7 @@ contract RewardLiquidityPool is
 
     /// @dev Generic formula for reward growth inside a range: (globalGrowth - growthBelow - growthAbove)
     /// same as rangeFeeGrowth
-    function rangeRewardGrowth(int24 lowerTick, int24 upperTick) public view returns (uint256 rewardGrowthInside)
-    {
+    function rangeRewardGrowth(int24 lowerTick, int24 upperTick) public view returns (uint256 rewardGrowthInside) {
         int24 currentTick = TickMath.getTickAtSqrtRatio(price);
 
         // Calculate reward growth below & above.

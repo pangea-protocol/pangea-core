@@ -92,17 +92,17 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
 
     await masterDeployer.deployPool(
       poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              rewardToken.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          rewardToken.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     const [tokenN0, tokenN1] =
@@ -112,7 +112,15 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "address", "uint24", "uint160", "uint24", "address"],
+        [
+          "address",
+          "address",
+          "address",
+          "uint24",
+          "uint160",
+          "uint24",
+          "address",
+        ],
         [
           tokenN0,
           tokenN1,

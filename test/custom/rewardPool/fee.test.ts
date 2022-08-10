@@ -79,7 +79,7 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     token1 = (await Token.deploy("tokenB", "B", 18)) as ERC20Test;
     [token0, token1] = sortTokens(token0, token1);
 
-    rewardToken = (await Token.deploy("Reward", 'R', 18)) as ERC20Test;
+    rewardToken = (await Token.deploy("Reward", "R", 18)) as ERC20Test;
 
     await token0.mint(
       airdropDistributor.address,
@@ -98,17 +98,17 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     );
     await masterDeployer.deployPool(
       poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              rewardToken.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING)
-            ]
-        )
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          rewardToken.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     const poolAddress = (

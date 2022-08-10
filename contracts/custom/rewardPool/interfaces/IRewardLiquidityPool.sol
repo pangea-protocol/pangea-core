@@ -6,8 +6,7 @@ import "./IRewardLiquidityPoolStruct.sol";
 import "../../../interfaces/IConcentratedLiquidityPool.sol";
 
 /// @notice Reward Liquidity Pool interface.
-interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool  {
-
+interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
     /// @notice reward Token
     function rewardToken() external view returns (address);
 

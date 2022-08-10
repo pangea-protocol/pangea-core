@@ -110,17 +110,7 @@ contract RewardLiquidityPoolManager is
     ) external nonReentrant validPool(pool) returns (uint256 _positionId) {
         _cacheForCallback(pool, amount0Desired, amount1Desired, false);
         return
-            _mint(
-                IRewardLiquidityPool(pool),
-                lowerOld,
-                lower,
-                upperOld,
-                upper,
-                amount0Desired,
-                amount1Desired,
-                minLiquidity,
-                positionId
-            );
+            _mint(IRewardLiquidityPool(pool), lowerOld, lower, upperOld, upper, amount0Desired, amount1Desired, minLiquidity, positionId);
     }
 
     /// @notice Create or add additional Liquidity to a given position of ERC20-NATIVE pair pool
@@ -242,10 +232,7 @@ contract RewardLiquidityPoolManager is
                 feeOwed0: 0,
                 feeOwed1: 0
             });
-            positionRewards[_positionId] = PositionReward({
-                rewardGrowthInside: pool.rangeRewardGrowth(lower, upper),
-                rewardOwed: 0
-            });
+            positionRewards[_positionId] = PositionReward({rewardGrowthInside: pool.rangeRewardGrowth(lower, upper), rewardOwed: 0});
             mint(msg.sender);
         } else {
             // We increase liquidity for an existing NFT.
@@ -265,7 +252,7 @@ contract RewardLiquidityPoolManager is
         }
 
         {
-            Position memory position =  positions[_positionId];
+            Position memory position = positions[_positionId];
             (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
                 TickMath.getSqrtRatioAtTick(position.lower),
                 TickMath.getSqrtRatioAtTick(position.upper),
@@ -344,10 +331,7 @@ contract RewardLiquidityPoolManager is
     }
 
     function _settleFee(uint256 positionId) internal {
-        (uint256 allocatedFee0,
-         uint256 allocatedFee1,
-         uint256 feeGrowthInside0,
-         uint256 feeGrowthInside1) = positionFees(positionId);
+        (uint256 allocatedFee0, uint256 allocatedFee1, uint256 feeGrowthInside0, uint256 feeGrowthInside1) = positionFees(positionId);
 
         Position storage position = positions[positionId];
         position.feeOwed0 = allocatedFee0;
@@ -421,26 +405,25 @@ contract RewardLiquidityPoolManager is
         (feeGrowthInside0, feeGrowthInside1) = IRewardLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
-            token0amount = FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) + position.feeOwed0;
-            token1amount = FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) + position.feeOwed1;
+            token0amount =
+                FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) +
+                position.feeOwed0;
+            token1amount =
+                FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) +
+                position.feeOwed1;
         }
     }
 
-    function positionRewardAmount(uint256 positionId)
-        public
-        view
-        returns (
-            uint256 rewardAmount,
-            uint256 rewardGrowthInside
-        )
-    {
+    function positionRewardAmount(uint256 positionId) public view returns (uint256 rewardAmount, uint256 rewardGrowthInside) {
         Position memory position = positions[positionId];
         PositionReward memory positionReward = positionRewards[positionId];
 
         rewardGrowthInside = IRewardLiquidityPool(position.pool).rangeRewardGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
-            rewardAmount = FullMath.mulDiv(rewardGrowthInside - positionReward.rewardGrowthInside, position.liquidity, FixedPoint.Q128) + positionReward.rewardOwed;
+            rewardAmount =
+                FullMath.mulDiv(rewardGrowthInside - positionReward.rewardGrowthInside, position.liquidity, FixedPoint.Q128) +
+                positionReward.rewardOwed;
         }
     }
 

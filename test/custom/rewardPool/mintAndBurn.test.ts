@@ -100,7 +100,7 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
           rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
-          BigNumber.from(TICK_SPACING)
+          BigNumber.from(TICK_SPACING),
         ]
       )
     );
@@ -118,7 +118,7 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
           rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
-          BigNumber.from(TICK_SPACING)
+          BigNumber.from(TICK_SPACING),
         ]
       )
     );
@@ -133,7 +133,7 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
             rewardToken.address,
             BigNumber.from(SWAP_FEE + 1),
             TWO_POW_96,
-            BigNumber.from(TICK_SPACING)
+            BigNumber.from(TICK_SPACING),
           ]
         )
       )
