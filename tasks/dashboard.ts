@@ -30,6 +30,7 @@ task("dashboard:pools", "Prints the list of pools")
         e.address,
         e.token0.symbol,
         e.token1.symbol,
+        e.factory,
         e.swapFee/1000000,
         e.tickSpacing,
         e.price,
@@ -39,7 +40,7 @@ task("dashboard:pools", "Prints the list of pools")
       ]);
 
       const table = new Table({
-        head: ["pool Address", "token0", "token1", "swapFee", "tickSpacing", "priceRatio", 'reserve0', 'reserve1', 'totalValueLock ($)']
+        head: ["pool Address", "token0", "token1", "factory", "swapFee", "tickSpacing", "priceRatio", 'reserve0', 'reserve1', 'totalValueLock ($)']
       });
 
       table.push(...rows);
