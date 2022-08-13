@@ -4,6 +4,7 @@ import {BigNumber} from "ethers";
 import Table from "cli-table3";
 import {Tokens} from "./harness/tokens";
 import {Positions} from "./harness/positions";
+import {RewardPositions} from "./harness/rewardPositions";
 
 task("dashboard:tokens", "Prints the list of tokens on TestPools")
     .setAction(async () => {
@@ -51,6 +52,16 @@ task("dashboard:pools", "Prints the list of pools")
 task("dashboard:positions", "Prints the list of positions")
     .setAction(async () => {
       const positions = await Positions();
+      const allPositions = await positions.all();
+
+      const table = await positions.positionTable(allPositions);
+      console.log(table.toString());
+    });
+
+
+task("dashboard:rewardPositions", "Prints the list of positions")
+    .setAction(async () => {
+      const positions = await RewardPositions();
       const allPositions = await positions.all();
 
       const table = await positions.positionTable(allPositions);

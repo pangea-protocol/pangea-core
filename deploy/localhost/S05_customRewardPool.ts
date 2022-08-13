@@ -120,7 +120,7 @@ const deployFunction: DeployFunction = async function (
 
   if ((await factory.poolsCount(WKLAY.address, KORC.address)).eq(0)) {
     const data = createDeployData(
-        WKLAY.address, KORC.address, KORC.address, 2000, parseUnits("200000", await WKLAY.decimals()), parseUnits("216600", await KORC.decimals())
+        WKLAY.address, KORC.address, KDAI.address, 2000, parseUnits("200000", await WKLAY.decimals()), parseUnits("216600", await KORC.decimals())
     )
     await doTransaction(masterDeployer.deployPool(factory.address, data));
   }

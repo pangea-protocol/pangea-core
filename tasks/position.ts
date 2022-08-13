@@ -6,10 +6,11 @@ import {Users} from "./harness/signers";
 import {Positions} from "./harness/positions";
 import {sqrt} from "@uniswap/sdk-core";
 import JSBI from "jsbi";
-import {ConcentratedLiquidityPoolManager} from "../types";
+import {ConcentratedLiquidityPoolManager, IRewardLiquidityPool, RewardLiquidityPoolManager} from "../types";
 import {ethers} from "hardhat";
 import {BigNumber} from "@ethersproject/bignumber";
 import {TickMath} from "@uniswap/v3-sdk";
+import {RewardPositions} from "./harness/rewardPositions";
 
 task("position:mint", "mint a new position NFT")
     .addPositionalParam("owner", "address or name")
@@ -229,6 +230,32 @@ task("position:collect", "claim fee from position")
       ));
 
       const balanceTable = await users.balanceTableWith(user.address, [positionInfo.token0, positionInfo.token1]);
+      console.log(balanceTable.toString())
+    })
+
+task("position:collectReward", "claim reward from position")
+    .addPositionalParam("owner", "address or name")
+    .addPositionalParam("tokenId")
+    .addPositionalParam("recipient")
+    .addPositionalParam("unwrap", "", false, types.boolean)
+    .setAction(async (
+        {owner, tokenId, recipient, unwrap}, {ethers}
+    ) => {
+      const users = await Users();
+      const positions = await RewardPositions();
+      const positionInfo = await positions.info(tokenId);
+
+      const user = users.signerFrom(owner);
+
+      const poolManager = await ethers.getContract("RewardLiquidityPoolManager") as RewardLiquidityPoolManager;
+      await doExecute(poolManager.connect(user).collectReward(
+          tokenId,
+          users.addressFrom(recipient),
+          unwrap
+      ));
+
+      const rewardToken = await (await ethers.getContractAt<IRewardLiquidityPool>("IRewardLiquidityPool",positionInfo.pool)).rewardToken();
+      const balanceTable = await users.balanceTableWith(user.address, [rewardToken]);
       console.log(balanceTable.toString())
     })
 
