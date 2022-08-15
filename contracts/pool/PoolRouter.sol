@@ -48,7 +48,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
 
     /// @notice Swaps amountIn of one token for as much as possible of another token
     /// @param params (uint256 amountIn,uint256 amountOutMinimum, address pool, address tokenIn, address to, bool unwrap)
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut) {
+    function exactInputSingle(ExactInputSingleParams memory params) public payable returns (uint256 amountOut) {
         _transfer(params.tokenIn, msg.sender, params.pool, params.amountIn);
 
         IConcentratedLiquidityPool pool = IConcentratedLiquidityPool(params.pool);
@@ -69,7 +69,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
 
     /// @notice Swaps token A to token B indirectly by using multiple hops.
     /// @param params (uint256 amountIn,uint256 amountOutMinimum, address[] path, address tokenIn, address to, bool unwrap)
-    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut) {
+    function exactInput(ExactInputParams memory params) public payable returns (uint256 amountOut) {
         _transfer(params.tokenIn, msg.sender, params.path[0], params.amountIn);
 
         address tokenIn = params.tokenIn == USE_KLAY ? wETH : params.tokenIn;
@@ -102,7 +102,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
 
     /// @notice Swaps as little as possible of one token for `amountOut` of another token
     /// @param params The parameters necessary for the swap, encoded as ExactOutputSingleParams in calldata
-    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn) {
+    function exactOutputSingle(ExactOutputSingleParams memory params) public payable returns (uint256 amountIn) {
         address tokenIn = params.tokenIn == USE_KLAY ? wETH : params.tokenIn;
         (amountIn, ) = SwapHelperLib.exactOutput(params.pool, tokenIn, params.amountOut);
         if (params.amountInMaximum < amountIn) revert TooLittleAmountIn();
@@ -132,7 +132,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
 
     /// @notice Swaps as little as possible of one token for `amountOut` of another token
     /// @param params The parameters necessary for the swap, encoded as ExactOutputSingleParams in calldata
-    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn) {
+    function exactOutput(ExactOutputParams memory params) public payable returns (uint256 amountIn) {
         amountIn = calculateAmountIn(params.path, params.tokenIn, params.amountOut);
         if (params.amountInMaximum < amountIn) revert TooLittleAmountIn();
 
@@ -203,7 +203,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
         address tokenIn, /// @dev the token address to swap-in. If tokenIn is address(0), msg.value will be wrapped and used as input token
         uint256 amountIn, /// @dev The amount of input tokens to send.
         uint256 amountOutMinimum, /// @dev minimum required amount of output token after swap
-        address[] calldata path, /// @dev An array of pool addresses to pass through
+        address[] memory path, /// @dev An array of pool addresses to pass through
         address to, /// @dev recipient of the output tokens
         bool unwrap /// @dev unwrap if output token is wrapped klay
     ) public payable returns (uint256) {
@@ -227,7 +227,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
         address tokenIn, /// @dev the token address to swap-in. If tokenIn is address(0), msg.value will be wrapped and used as input token
         uint256 amountOut, /// @dev The amount of output tokens to receive
         uint256 amountInMaximum, /// @dev  maximum available amount of input token after swap
-        address[] calldata path, /// @dev An array of pool addresses to pass through
+        address[] memory path, /// @dev An array of pool addresses to pass through
         address to, /// @dev recipient of the output tokens
         bool unwrap /// @dev unwrap if output token is wrapped klay
     ) public payable returns (uint256) {
@@ -249,7 +249,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
     }
 
     function calculateAmountIn(
-        address[] calldata path,
+        address[] memory path,
         address tokenIn,
         uint256 amountOut
     ) internal view returns (uint256 amountIn) {
@@ -263,7 +263,7 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
         amountIn = amountOut;
     }
 
-    function findTokenOut(address[] calldata path, address tokenIn) internal view returns (address tokenOut) {
+    function findTokenOut(address[] memory path, address tokenIn) internal view returns (address tokenOut) {
         tokenOut = tokenIn == address(0) ? wETH : tokenIn;
         IConcentratedLiquidityPool pool;
         for (uint256 i = 0; i < path.length; i++) {
