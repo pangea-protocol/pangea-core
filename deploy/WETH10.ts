@@ -16,7 +16,8 @@ const deployFunction: DeployFunction = async function (
             salt: await saltValue(),
             from: deployer,
             waitConfirmations: await waitConfirmations(),
-            log:true
+            log:true,
+            gasPrice: "250000000000"
         })).deploy()
     } else {
         const { deploy } = deployments;
@@ -26,7 +27,8 @@ const deployFunction: DeployFunction = async function (
             from: deployer,
             deterministicDeployment: false,
             waitConfirmations: await waitConfirmations(),
-            log:true
+            log:true,
+            gasPrice: "250000000000"
         });
     }
 };

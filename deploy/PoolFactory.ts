@@ -18,7 +18,8 @@ const deployFunction: DeployFunction = async function ({
     from: deployer,
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
-    log:true
+    log:true,
+    gasPrice: "250000000000"
   });
 
   const {address: PoolFactoryLib} = await deploy("PoolFactoryLib", {
@@ -26,7 +27,8 @@ const deployFunction: DeployFunction = async function ({
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
     log:true,
-    libraries: {Ticks}
+    libraries: {Ticks},
+    gasPrice: "250000000000"
   });
 
   const deployResult  = await deploy("ConcentratedLiquidityPoolFactory", {
@@ -46,10 +48,11 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: "250000000000"
   });
 
   if (!(await masterDeployer.whitelistedFactories(deployResult.address))) {
-    await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address));
+    await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address, {gasPrice: "250000000000"}));
   }
 };
 

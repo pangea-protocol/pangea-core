@@ -34,11 +34,12 @@ const deployFunction: DeployFunction = async function ({
     libraries: { TickIndex },
     log:true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: "250000000000"
   });
 };
 
 export default deployFunction;
 
-// deployFunction.dependencies = ["MasterDeployer", "WETH10"];
+deployFunction.dependencies = ["MasterDeployer", "WETH10"];
 
 deployFunction.tags = ["ConcentratedLiquidityPoolManager", 'deploy'];

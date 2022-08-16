@@ -18,7 +18,8 @@ const deployFunction: DeployFunction = async function ({
         args:[weth.address],
         deterministicDeployment: false,
         waitConfirmations: await waitConfirmations(),
-        log:true
+        log:true,
+        gasPrice: "250000000000"
     });
 };
 

@@ -27,9 +27,10 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: "250000000000"
   });
 
-  await doTransaction(masterDeployer.setAirdropDistributor(deployResult.address));
+  await doTransaction(masterDeployer.setAirdropDistributor(deployResult.address, {gasPrice: "250000000000"}));
 };
 
 export default deployFunction;

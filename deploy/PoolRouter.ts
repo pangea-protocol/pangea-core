@@ -27,6 +27,7 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: "250000000000"
   });
 };
 

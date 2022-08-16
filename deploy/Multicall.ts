@@ -13,7 +13,8 @@ const deployFunction: DeployFunction = async function ({
         from: deployer,
         deterministicDeployment: false,
         waitConfirmations: await waitConfirmations(),
-        log:true
+        log:true,
+        gasPrice: "250000000000"
     });
 };
 
