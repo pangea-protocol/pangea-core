@@ -2,6 +2,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {doTransaction, waitConfirmations} from "./utils";
 import {MasterDeployer, WETH10} from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
   deployments,
@@ -27,7 +28,7 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
-    gasPrice: "250000000000"
+    gasPrice: BigNumber.from("250000000000")
   });
 
   await doTransaction(masterDeployer.setAirdropDistributor(deployResult.address, {gasPrice: "250000000000"}));

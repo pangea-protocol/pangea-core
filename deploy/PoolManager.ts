@@ -1,6 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {waitConfirmations} from "./utils";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
   deployments,
@@ -16,7 +17,8 @@ const deployFunction: DeployFunction = async function ({
     from: deployer,
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
-    log:true
+    log:true,
+    gasPrice: BigNumber.from("250000000000")
   });
 
   await deploy("ConcentratedLiquidityPoolManager", {
@@ -34,7 +36,7 @@ const deployFunction: DeployFunction = async function ({
     libraries: { TickIndex },
     log:true,
     waitConfirmations: await waitConfirmations(),
-    gasPrice: "250000000000"
+    gasPrice: BigNumber.from("250000000000")
   });
 };
 

@@ -1,22 +1,25 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { waitConfirmations } from "./utils";
-import {MasterDeployer, PoolLogger} from "../types";
+import { MasterDeployer } from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
                                                            ethers,
                                                            deployments,
+                                                           getNamedAccounts
                                                        }: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
 
-    const { deployer, dev } = await ethers.getNamedSigners();
+    const { deployer } = await ethers.getNamedSigners();
+    const { dev } = await getNamedAccounts();
 
     const masterDeployer = await ethers.getContract<MasterDeployer>("MasterDeployer");
 
     await deploy("PoolLogger", {
         from: deployer.address,
         proxy: {
-            owner: dev.address,
+            owner: dev,
             proxyContract: "OpenZeppelinTransparentProxy",
             execute: {
                 init: {
@@ -27,7 +30,7 @@ const deployFunction: DeployFunction = async function ({
         },
         log:true,
         waitConfirmations: await waitConfirmations(),
-        gasPrice: "250000000000"
+        gasPrice: BigNumber.from("250000000000")
     });
 };
 

@@ -1,6 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {waitConfirmations} from "./utils";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
                                                            deployments,
@@ -14,7 +15,7 @@ const deployFunction: DeployFunction = async function ({
         deterministicDeployment: false,
         waitConfirmations: await waitConfirmations(),
         log:true,
-        gasPrice: "250000000000"
+        gasPrice: BigNumber.from("250000000000")
     });
 };
 

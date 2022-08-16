@@ -2,6 +2,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {doTransaction, waitConfirmations} from "./utils";
 import {MasterDeployer, PoolLogger} from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
   deployments,
@@ -19,7 +20,7 @@ const deployFunction: DeployFunction = async function ({
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
     log:true,
-    gasPrice: "250000000000"
+    gasPrice: BigNumber.from("250000000000")
   });
 
   const {address: PoolFactoryLib} = await deploy("PoolFactoryLib", {
@@ -28,7 +29,7 @@ const deployFunction: DeployFunction = async function ({
     waitConfirmations: await waitConfirmations(),
     log:true,
     libraries: {Ticks},
-    gasPrice: "250000000000"
+    gasPrice: BigNumber.from("250000000000")
   });
 
   const deployResult  = await deploy("ConcentratedLiquidityPoolFactory", {
@@ -48,11 +49,11 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
-    gasPrice: "250000000000"
+    gasPrice: BigNumber.from("250000000000")
   });
 
   if (!(await masterDeployer.whitelistedFactories(deployResult.address))) {
-    await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address, {gasPrice: "250000000000"}));
+    await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address, {gasPrice: BigNumber.from("250000000000")}));
   }
 };
 
