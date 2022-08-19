@@ -58,7 +58,7 @@ const config: HardhatUserConfig = {
     cypress: {
       chainId: 8217,
       url: 'https://public-node-api.klaytnapi.com/v1/cypress',
-      accounts: [process.env.DEPLOYER!, process.env.DEV!],
+      accounts,
       gasPrice: 250000000000
     },
   },
