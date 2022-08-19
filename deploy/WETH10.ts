@@ -1,6 +1,7 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {isLocalTestNetwork, saltValue, waitConfirmations} from "./utils";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function (
     {
@@ -16,7 +17,8 @@ const deployFunction: DeployFunction = async function (
             salt: await saltValue(),
             from: deployer,
             waitConfirmations: await waitConfirmations(),
-            log:true
+            log:true,
+            gasPrice: BigNumber.from("250000000000")
         })).deploy()
     } else {
         const { deploy } = deployments;
@@ -26,7 +28,8 @@ const deployFunction: DeployFunction = async function (
             from: deployer,
             deterministicDeployment: false,
             waitConfirmations: await waitConfirmations(),
-            log:true
+            log:true,
+            gasPrice: BigNumber.from("250000000000")
         });
     }
 };

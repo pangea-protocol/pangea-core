@@ -23,9 +23,7 @@ import "../libraries/FixedPoint.sol";
 contract PositionDashboard is Initializable {
     IConcentratedLiquidityPoolManager public poolManager;
 
-    function initialize(
-        address _poolManager
-    ) external initializer {
+    function initialize(address _poolManager) external initializer {
         poolManager = IConcentratedLiquidityPoolManager(_poolManager);
     }
 

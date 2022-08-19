@@ -2,6 +2,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {waitConfirmations} from "./utils";
 import {WETH10} from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
                                                            ethers,
@@ -18,7 +19,8 @@ const deployFunction: DeployFunction = async function ({
         args:[weth.address],
         deterministicDeployment: false,
         waitConfirmations: await waitConfirmations(),
-        log:true
+        log:true,
+        gasPrice: BigNumber.from("250000000000")
     });
 };
 

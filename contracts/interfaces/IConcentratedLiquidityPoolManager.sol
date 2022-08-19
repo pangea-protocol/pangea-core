@@ -44,9 +44,23 @@ interface IConcentratedLiquidityPoolManagerStruct {
 }
 
 interface IConcentratedLiquidityPoolManagerEvent {
-    event IncreaseLiquidity(address indexed pool, address indexed owner, uint256 indexed positionId, uint256 amount0, uint256 amount1, uint128 liquidity);
+    event IncreaseLiquidity(
+        address indexed pool,
+        address indexed owner,
+        uint256 indexed positionId,
+        uint256 amount0,
+        uint256 amount1,
+        uint128 liquidity
+    );
 
-    event DecreaseLiquidity(address indexed pool, address indexed owner, uint256 indexed positionId, uint256 amount0, uint256 amount1, uint128 liquidity);
+    event DecreaseLiquidity(
+        address indexed pool,
+        address indexed owner,
+        uint256 indexed positionId,
+        uint256 amount0,
+        uint256 amount1,
+        uint128 liquidity
+    );
 
     event CollectFee(address indexed pool, address indexed recipient, uint256 indexed positionId, uint256 amount0, uint256 amount1);
 }

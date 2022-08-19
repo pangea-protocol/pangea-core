@@ -18,7 +18,7 @@
     "console": "hardhat console --network hardhat",
     "coverage": "hardhat coverage --network hardhat",
     "hardhat:deploy": "hardhat node --network hardhat --tags TestDeployOracle",
-    "baobab:deploy": "hardhat deploy --network baobab --tags deploy",
+    "baobab:deploy": "hardhat deploy --network baobab --tags ConcentratedLiquidityPoolManager",
     "cypress:deploy": "hardhat deploy --network cypress --tags deploy",
     "test": "hardhat test --network hardhat",
     "test:parallel": "hardhat test --network hardhat --parallel",
