@@ -77,7 +77,7 @@ describe("unit test : description", function () {
     _snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
 
-  describe.only("TOKEN_URI GENERATION", async () => {
+  describe("TOKEN_URI GENERATION", async () => {
 
 
     it("rendering OnPosition Image", async () => {

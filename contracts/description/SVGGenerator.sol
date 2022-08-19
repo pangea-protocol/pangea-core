@@ -13,13 +13,9 @@ import "./resources/BiArrow.sol";
 
 library SVGGenerator {
     string internal constant CANVAS =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="264" height="244" version="1.1" font-family="volcano" fill="#ffffff">';
-    string internal constant FOOTER = '<rect x="0" y="212" width="264" height="32"  fill="#000000"/>';
+        '<svg xmlns="http://www.w3.org/2000/svg" width="264" height="264" version="1.1" font-family="volcano" fill="#ffffff">';
+    string internal constant FOOTER = '<rect x="0" y="232" width="264" height="32"  fill="#000000"/>';
     string internal constant END = "</svg>";
-
-    /// POSITION COLOR
-    string internal constant POSITION_IN_RANGE = '<circle cx="240" cy="228" r="4" fill="#06C270"/>';
-    string internal constant POSITION_OUT_RANGE = '<circle cx="240" cy="228" r="4" fill="#777675"/>';
 
     bytes32 internal constant WKLAY10_HASH = keccak256(abi.encode("WKLAY10"));
     bytes32 internal constant WKLAY_HASH = keccak256(abi.encode("WKLAY"));
@@ -41,8 +37,7 @@ library SVGGenerator {
         string memory _priceText = priceRangeText(param);
         bool _inRange = inRange(param.curr, param.lower, param.upper);
         string memory background = _inRange ? OnPosition.IMAGE() : OffPosition.IMAGE();
-        string memory _rangeText = _inRange ? POSITION_IN_RANGE : POSITION_OUT_RANGE;
-        return string(abi.encodePacked(SVGImage(background), _token0Text, _token1Text, _feeText, _priceText, _rangeText, END));
+        return string(abi.encodePacked(SVGImage(background), _token0Text, _token1Text, _feeText, _priceText, END));
     }
 
     function SVGImage(string memory innerImage) internal pure returns (string memory) {
@@ -91,7 +86,7 @@ library SVGGenerator {
         return
             string(
                 abi.encodePacked(
-                    '<text x="29" y="232" text-anchor="middle" font-size="11px">',
+                    '<text x="29" y="252" text-anchor="middle" font-size="11px">',
                     PositionDescriptionLib.feeToPercentString(fee),
                     "</text>"
                 )
@@ -102,18 +97,18 @@ library SVGGenerator {
         bool minRange = param.lower < -886272;
         bool maxRange = param.upper > 886272;
         if (minRange && maxRange) {
-            return '<text x="132" y="232" text-anchor="middle" font-size="11px">Full Range</text>';
+            return '<text x="132" y="252" text-anchor="middle" font-size="11px">Full Range</text>';
         }
         string memory lower = minRange ? "Min" : priceText(param.lower, param.token0, param.token1);
         string memory upper = maxRange ? "Max" : priceText(param.upper, param.token0, param.token1);
         return
             string(
                 abi.encodePacked(
-                    '<text x="125" y="232" text-anchor="end" font-size="11px">',
+                    '<text x="125" y="252" text-anchor="end" font-size="11px">',
                     lower,
                     "</text>",
                     BiArrow.IMAGE(),
-                    '<text x="150" y="232" text-anchor="start" font-size="11px">',
+                    '<text x="150" y="252" text-anchor="start" font-size="11px">',
                     upper,
                     "</text>"
                 )
