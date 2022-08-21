@@ -93,6 +93,7 @@ contract ConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct, IPoolFac
 
     uint256 internal unlocked;
 
+    /// @notice do not use this... it can be easily corrupted
     uint256 public totalTicks;
     mapping(int24 => Tick) public ticks;
     mapping(address => mapping(int24 => mapping(int24 => Position))) public positions;

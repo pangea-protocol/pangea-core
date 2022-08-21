@@ -8,10 +8,14 @@ const deployFunction: DeployFunction = async function ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) {
   const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { deployer, dev } = await getNamedAccounts();
+
   await deploy("ConcentratedLiquidityPoolHelper", {
     from: deployer,
-    deterministicDeployment: false,
+    proxy: {
+      owner: dev,
+      proxyContract: "OpenZeppelinTransparentProxy",
+    },
     log:true,
     waitConfirmations: await waitConfirmations(),
     gasPrice: BigNumber.from("250000000000")
