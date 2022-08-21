@@ -12,7 +12,7 @@ This repository contains the core smart contracts(Concentrated Liquidity Pool) f
 | ---      |-----------------------------------------------|
 | AirdropDistributor | `0xabAF9FED5d9Fc75C379f5811de61Ed944b537375`  | 
 | ConcentratedLiquidityPoolFactory | `0x2be2C91cCA2df52b41a9e42723c46fD029359c95`  | 
-| ConcentratedLiquidityPoolHelper | `0x1de8bA72924a257E638c9EAb5254Cd3D7D1972a2`  | 
+| ConcentratedLiquidityPoolHelper | `0x1f7d55F06A6FEb2bA06c614b49896547d16c2CA8`  | 
 | ConcentratedLiquidityPoolManager | `0xA1C559400fb27673023224A609843b60e674855F`  | 
 | MasterDeployer | `0x899d8Ff3d3BD16DBE4eFF245BdA27EF96C01044B`  |
 | PoolLogger | `0x6e66D3aDfc2902b9e0A46C80D2803642596cc5F6`  | 
@@ -29,7 +29,7 @@ This repository contains the core smart contracts(Concentrated Liquidity Pool) f
 | ---      | ----    |
 | AirdropDistributor | `0x5d5Cc76396742C6E4A7a21ff352e04957eae5304` | 
 | ConcentratedLiquidityPoolFactory | `0x3d94b5E3b83CbD52B9616930D33515613ADfAd67` | 
-| ConcentratedLiquidityPoolHelper | `0x514b7A31f51c4171C40c5b3a183d466db593a4b8` | 
+| ConcentratedLiquidityPoolHelper | `0xA88955cd70C363a617465CbCf844d1dEa22177fe` | 
 | ConcentratedLiquidityPoolManager | `0xEd52BD01b0608a6B6d4f4E03aFfCe16c1FF19c23` | 
 | MasterDeployer | `0xEB4B1CE03bb947Ce23ABd1403dF7C9B86004178d` |
 | PoolLogger | `0x002A422533cccEeA9aBF9e56e2A25d72672891bC` | 
