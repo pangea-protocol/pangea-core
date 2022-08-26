@@ -74,11 +74,9 @@ library SVGGenerator {
 
     function boostImage(uint256 boost) internal pure returns (string memory) {
         string memory image;
-        if (boost >= 20) {
-        } else if (boost >= 15) {
+        if (boost >= 20) {} else if (boost >= 15) {
             return OnPosition.IMAGE();
-        } else if (boost >= 10) {
-        }
+        } else if (boost >= 10) {}
         return OffPosition.IMAGE();
     }
 
@@ -115,7 +113,11 @@ library SVGGenerator {
             );
     }
 
-    function inRange(uint160 curr, int24 lower, int24 upper) internal pure returns (bool) {
+    function inRange(
+        uint160 curr,
+        int24 lower,
+        int24 upper
+    ) internal pure returns (bool) {
         return TickMath.getSqrtRatioAtTick(lower) <= curr && curr < TickMath.getSqrtRatioAtTick(upper);
     }
 }
