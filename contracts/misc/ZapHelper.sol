@@ -71,6 +71,7 @@ contract ZapHelper {
 
                 amount0 += DyDxMath.getDx(cache.currentLiquidity, newPrice, cache.currentPrice, true);
                 amount1 += amountWithOutFee(DyDxMath.getDy(cache.currentLiquidity, newPrice, cache.currentPrice, false), swapFee);
+                cache.currentPrice = newPrice;
 
                 if (nextTickPrice > targetPrice) cross = true;
             } else {
@@ -80,6 +81,7 @@ contract ZapHelper {
 
                 amount1 += DyDxMath.getDy(cache.currentLiquidity, cache.currentPrice, newPrice, false);
                 amount0 += amountWithOutFee(DyDxMath.getDx(cache.currentLiquidity, cache.currentPrice, newPrice, false), swapFee);
+                cache.currentPrice = newPrice;
 
                 if (nextTickPrice < targetPrice) cross = true;
             }
@@ -89,13 +91,6 @@ contract ZapHelper {
 
                 if (cache.currentLiquidity == 0) {
                     if (cache.nextTickToCross == TickMath.MAX_TICK || cache.nextTickToCross == TickMath.MIN_TICK) {
-                        // In the case of the last tick, there is no next tick.
-                        // price must be crossed because of rangeFeeGrowth
-                        if (zeroForOne) {
-                            cache.currentPrice = Math.max(cache.currentPrice - 1, TickMath.MIN_SQRT_RATIO);
-                        } else {
-                            cache.currentPrice = Math.min(cache.currentPrice + 1, TickMath.MAX_SQRT_RATIO - 1);
-                        }
                         break;
                     }
                     cache.currentPrice = uint256(TickMath.getSqrtRatioAtTick(cache.nextTickToCross));
