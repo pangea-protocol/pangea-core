@@ -1,20 +1,20 @@
-import { ethers, network } from "hardhat";
+import {ethers, network} from "hardhat";
 import {
-  RewardLiquidityPoolFactory,
-  PoolRouter,
   ERC20Test,
   MasterDeployer,
-  WETH10,
-  SwapHelper,
-  RewardLiquidityPoolManager,
+  PoolRouter,
   RewardLiquidityPool,
+  RewardLiquidityPoolFactory,
+  RewardLiquidityPoolManager,
+  SwapHelper,
+  WETH10,
 } from "../../../types";
-import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
-import { expect } from "chai";
-import { describe } from "mocha";
-import { RewardPangea } from "./RewardPangea";
+import {BigNumber} from "ethers";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import {getDx, getDy, getPriceAtTick, sortTokens} from "../../harness/utils";
+import {expect} from "chai";
+import {describe} from "mocha";
+import {RewardPangea} from "./RewardPangea";
 
 /**
  * Test for Swap in Reward Liquidity Pool
@@ -70,8 +70,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     pangea = await RewardPangea.Instance.init();
     wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
-    poolFactory = pangea.concentratedPoolFactory;
-    poolManager = pangea.concentratedPoolManager;
+    poolFactory = pangea.poolFactory;
+    poolManager = pangea.poolManager;
     router = pangea.router;
     swapHelper = pangea.swapHelper;
 
@@ -84,69 +84,78 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     rewardToken = (await Token.deploy("REWARD", "R", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableFeeAndTickSpacing(
-      SWAP_FEE,
-      TICK_SPACING,
-      true
+    await poolFactory.setAvailableParameter(
+        token0.address,
+        token1.address,
+        rewardToken.address,
+        BigNumber.from(SWAP_FEE),
+        BigNumber.from(TICK_SPACING)
     );
-
     await masterDeployer.deployPool(
-      poolFactory.address,
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "address", "uint24", "uint160", "uint24"],
-        [
-          token0.address,
-          token1.address,
-          rewardToken.address,
-          BigNumber.from(SWAP_FEE),
-          TWO_POW_96,
-          BigNumber.from(TICK_SPACING),
-        ]
-      )
+        poolFactory.address,
+        ethers.utils.defaultAbiCoder.encode(
+            ["address", "address", "address", "uint24", "uint160", "uint24"],
+            [
+              token0.address,
+              token1.address,
+              rewardToken.address,
+              BigNumber.from(SWAP_FEE),
+              TWO_POW_96,
+              BigNumber.from(TICK_SPACING),
+            ]
+        )
     );
 
     const [tokenN0, tokenN1] =
-      token0.address.toLowerCase() < wklay.address.toLowerCase()
-        ? [token0.address, wklay.address]
-        : [wklay.address, token0.address];
+        token0.address.toLowerCase() < wklay.address.toLowerCase()
+            ? [token0.address, wklay.address]
+            : [wklay.address, token0.address];
+    await poolFactory.setAvailableParameter(
+        tokenN0,
+        tokenN1,
+        rewardToken.address,
+        BigNumber.from(SWAP_FEE),
+        BigNumber.from(TICK_SPACING)
+    );
+
     await masterDeployer.deployPool(
-      poolFactory.address,
-      ethers.utils.defaultAbiCoder.encode(
-        [
-          "address",
-          "address",
-          "address",
-          "uint24",
-          "uint160",
-          "uint24",
-          "address",
-        ],
-        [
-          tokenN0,
-          tokenN1,
-          rewardToken.address,
-          BigNumber.from(SWAP_FEE),
-          TWO_POW_96,
-          BigNumber.from(TICK_SPACING),
-          ethers.constants.AddressZero,
-        ]
-      )
+        poolFactory.address,
+        ethers.utils.defaultAbiCoder.encode(
+            [
+              "address",
+              "address",
+              "address",
+              "uint24",
+              "uint160",
+              "uint24",
+              "address",
+            ],
+            [
+              tokenN0,
+              tokenN1,
+              rewardToken.address,
+              BigNumber.from(SWAP_FEE),
+              TWO_POW_96,
+              BigNumber.from(TICK_SPACING),
+              ethers.constants.AddressZero,
+            ]
+        )
     );
 
     const poolAddress = (
-      await poolFactory.getPools(token0.address, token1.address, 0, 1)
+        await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
-      poolAddress
+        "RewardLiquidityPool",
+        poolAddress
     );
 
     const nativePoolAddress = (
-      await poolFactory.getPools(token0.address, wklay.address, 0, 1)
+        await poolFactory.getPools(token0.address, wklay.address, 0, 1)
     )[0];
     nativePool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
-      nativePoolAddress
+        "RewardLiquidityPool",
+        nativePoolAddress
     );
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
@@ -175,8 +184,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
   }
 
   async function swapToken0ToToken1(
-    amountIn: BigNumber,
-    amountOutMinimum: BigNumber
+      amountIn: BigNumber,
+      amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
     await token0.connect(trader).mint(trader.address, amountIn);
@@ -193,8 +202,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
   }
 
   async function swapToken1ToToken0(
-    amountIn: BigNumber,
-    amountOutMinimum: BigNumber
+      amountIn: BigNumber,
+      amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
     await token1.connect(trader).mint(trader.address, amountIn);
@@ -211,9 +220,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
   }
 
   function withInPrecision(
-    price0: BigNumber,
-    price1: BigNumber,
-    precision: number
+      price0: BigNumber,
+      price1: BigNumber,
+      precision: number
   ) {
     const base = BigNumber.from(10).pow(precision);
     const value = base.sub(price0.mul(base).div(price1)).abs();
@@ -224,49 +233,49 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     const amount0Desired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amount0Desired.mul(4));
     await token0
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amount0Desired.mul(4));
+        .connect(liquidityProvider)
+        .approve(poolManager.address, amount0Desired.mul(4));
 
     const amount1Desired = ethers.utils.parseEther("100");
     await token1.mint(liquidityProvider.address, amount1Desired.mul(4));
     await token1
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amount1Desired.mul(4));
+        .connect(liquidityProvider)
+        .approve(poolManager.address, amount1Desired.mul(4));
     await poolManager
-      .connect(liquidityProvider)
-      .mint(
-        pool.address,
-        lowerTick,
-        lowerTick,
-        upperTick,
-        upperTick,
-        amount0Desired,
-        amount1Desired,
-        0,
-        0
-      );
+        .connect(liquidityProvider)
+        .mint(
+            pool.address,
+            lowerTick,
+            lowerTick,
+            upperTick,
+            upperTick,
+            amount0Desired,
+            amount1Desired,
+            0,
+            0
+        );
   }
 
   async function addLiquidityNative(lowerTick: number, upperTick: number) {
     const amountDesired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amountDesired);
     await token0
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amountDesired);
+        .connect(liquidityProvider)
+        .approve(poolManager.address, amountDesired);
 
     await poolManager
-      .connect(liquidityProvider)
-      .mintNative(
-        nativePool.address,
-        lowerTick,
-        lowerTick,
-        upperTick,
-        upperTick,
-        amountDesired,
-        0,
-        0,
-        { value: amountDesired }
-      );
+        .connect(liquidityProvider)
+        .mintNative(
+            nativePool.address,
+            lowerTick,
+            lowerTick,
+            upperTick,
+            upperTick,
+            amountDesired,
+            0,
+            0,
+            {value: amountDesired}
+        );
   }
 
   describe("ABNORMAL SWAP CASE", async () => {
@@ -286,11 +295,11 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const amountIn = await getDx(liquidity, targetPrice, currentPrice, true);
 
       const output = (
-        await swapHelper.calculateExactInputSingle(
-          pool.address,
-          wklay.address,
-          amountIn
-        )
+          await swapHelper.calculateExactInputSingle(
+              pool.address,
+              wklay.address,
+              amountIn
+          )
       ).amountOut;
 
       // WHEN
@@ -298,14 +307,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token0.connect(trader).approve(router.address, amountIn);
 
       await expect(
-        router.connect(trader).exactInputSingle({
-          tokenIn: token0.address,
-          amountIn,
-          amountOutMinimum: output.add(1),
-          pool: pool.address,
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactInputSingle({
+            tokenIn: token0.address,
+            amountIn,
+            amountOutMinimum: output.add(1),
+            pool: pool.address,
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
@@ -316,11 +325,11 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const amountIn = await getDx(liquidity, targetPrice, currentPrice, true);
 
       const output = (
-        await swapHelper.calculateExactInput(
-          [pool.address, nativePool.address],
-          token1.address,
-          amountIn
-        )
+          await swapHelper.calculateExactInput(
+              [pool.address, nativePool.address],
+              token1.address,
+              amountIn
+          )
       ).amountOut;
 
       // WHEN
@@ -328,14 +337,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token1.connect(trader).approve(router.address, amountIn);
 
       await expect(
-        router.connect(trader).exactInput({
-          tokenIn: token1.address,
-          amountIn,
-          amountOutMinimum: output.add(1),
-          path: [pool.address, nativePool.address],
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactInput({
+            tokenIn: token1.address,
+            amountIn,
+            amountOutMinimum: output.add(1),
+            path: [pool.address, nativePool.address],
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
@@ -350,14 +359,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token0.connect(trader).approve(router.address, amountIn);
 
       await expect(
-        router.connect(trader).exactInputSingle({
-          tokenIn: token0.address,
-          amountIn,
-          amountOutMinimum: 0,
-          pool: trader.address,
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactInputSingle({
+            tokenIn: token0.address,
+            amountIn,
+            amountOutMinimum: 0,
+            pool: trader.address,
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
@@ -372,23 +381,23 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token0.connect(trader).approve(router.address, amountIn);
 
       await expect(
-        router.connect(trader).exactInput({
-          tokenIn: token0.address,
-          amountIn,
-          amountOutMinimum: 0,
-          path: [pool.address, nativePool.address, trader.address],
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactInput({
+            tokenIn: token0.address,
+            amountIn,
+            amountOutMinimum: 0,
+            path: [pool.address, nativePool.address, trader.address],
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
     it("REVERT CASE ) receive revert", async () => {
       await expect(
-        trader.sendTransaction({
-          to: router.address,
-          value: ethers.utils.parseEther("1"),
-        })
+          trader.sendTransaction({
+            to: router.address,
+            value: ethers.utils.parseEther("1"),
+          })
       ).to.be.reverted;
     });
   });
@@ -426,10 +435,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-2 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -439,10 +448,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const expectedOutput = (
-        await getDy(liquidity, targetPrice, currentPrice, true)
+          await getDy(liquidity, targetPrice, currentPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -454,10 +463,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-4 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -467,10 +476,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const expectedOutput = (
-        await getDy(liquidity, targetPrice, currentPrice, true)
+          await getDy(liquidity, targetPrice, currentPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -483,10 +492,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const marginPrice = await getPriceAtTick(-4 * TICK_SPACING);
       const targetPrice = await getPriceAtTick(-5 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -496,10 +505,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const expectedOutput = (
-        await getDy(liquidity, marginPrice, currentPrice, true)
+          await getDy(liquidity, marginPrice, currentPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(marginPrice, poolPrice, 8)).to.be.true;
@@ -511,10 +520,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(2 * TICK_SPACING);
       const inputAmount = await getDy(
-        liquidity,
-        currentPrice,
-        targetPrice,
-        true
+          liquidity,
+          currentPrice,
+          targetPrice,
+          true
       );
 
       // WHEN
@@ -524,10 +533,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const expectedOutput = (
-        await getDx(liquidity, currentPrice, targetPrice, true)
+          await getDx(liquidity, currentPrice, targetPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -539,10 +548,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(3 * TICK_SPACING);
       const inputAmount = await getDy(
-        liquidity,
-        currentPrice,
-        targetPrice,
-        true
+          liquidity,
+          currentPrice,
+          targetPrice,
+          true
       );
 
       // WHEN
@@ -552,10 +561,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const expectedOutput = (
-        await getDx(liquidity, currentPrice, targetPrice, true)
+          await getDx(liquidity, currentPrice, targetPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -568,10 +577,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const marginPrice = await getPriceAtTick(3 * TICK_SPACING);
       const targetPrice = await getPriceAtTick(4 * TICK_SPACING);
       const inputAmount = await getDy(
-        liquidity,
-        currentPrice,
-        targetPrice,
-        true
+          liquidity,
+          currentPrice,
+          targetPrice,
+          true
       );
 
       // WHEN
@@ -581,10 +590,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const expectedOutput = (
-        await getDx(liquidity, currentPrice, marginPrice, true)
+          await getDx(liquidity, currentPrice, marginPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(marginPrice, poolPrice, 8)).to.be.true;
@@ -641,8 +650,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const expectedOutput = (await getDy(lp1, targetPrice, currentPrice, true))
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -654,16 +663,16 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-8 * TICK_SPACING);
       const spanDx1 = await getDx(
-        lp1,
-        await getPriceAtTick(-4 * TICK_SPACING),
-        currentPrice,
-        true
+          lp1,
+          await getPriceAtTick(-4 * TICK_SPACING),
+          currentPrice,
+          true
       );
       const spanDx2 = await getDx(
-        lp2,
-        targetPrice,
-        await getPriceAtTick(-7 * TICK_SPACING),
-        true
+          lp2,
+          targetPrice,
+          await getPriceAtTick(-7 * TICK_SPACING),
+          true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
@@ -674,25 +683,25 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const spanDy1 = (
-        await getDy(
-          lp1,
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
-        )
+          await getDy(
+              lp1,
+              await getPriceAtTick(-4 * TICK_SPACING),
+              currentPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDy(
-          lp2,
-          targetPrice,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          true
-        )
+          await getDy(
+              lp2,
+              targetPrice,
+              await getPriceAtTick(-7 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -706,16 +715,16 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-10 * TICK_SPACING);
       const spanDx1 = await getDx(
-        lp1,
-        await getPriceAtTick(-4 * TICK_SPACING),
-        currentPrice,
-        true
+          lp1,
+          await getPriceAtTick(-4 * TICK_SPACING),
+          currentPrice,
+          true
       );
       const spanDx2 = await getDx(
-        lp2,
-        targetPrice,
-        await getPriceAtTick(-7 * TICK_SPACING),
-        true
+          lp2,
+          targetPrice,
+          await getPriceAtTick(-7 * TICK_SPACING),
+          true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
@@ -726,25 +735,25 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const spanDy1 = (
-        await getDy(
-          lp1,
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
-        )
+          await getDy(
+              lp1,
+              await getPriceAtTick(-4 * TICK_SPACING),
+              currentPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDy(
-          lp2,
-          targetPrice,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          true
-        )
+          await getDy(
+              lp2,
+              targetPrice,
+              await getPriceAtTick(-7 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -766,8 +775,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const expectedOutput = (await getDx(lp1, currentPrice, targetPrice, true))
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -779,16 +788,16 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(7 * TICK_SPACING);
       const spanDx1 = await getDy(
-        lp1,
-        currentPrice,
-        await getPriceAtTick(3 * TICK_SPACING),
-        true
+          lp1,
+          currentPrice,
+          await getPriceAtTick(3 * TICK_SPACING),
+          true
       );
       const spanDx2 = await getDy(
-        lp3,
-        await getPriceAtTick(6 * TICK_SPACING),
-        targetPrice,
-        true
+          lp3,
+          await getPriceAtTick(6 * TICK_SPACING),
+          targetPrice,
+          true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
@@ -799,25 +808,25 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const spanDy1 = (
-        await getDx(
-          lp1,
-          currentPrice,
-          await getPriceAtTick(3 * TICK_SPACING),
-          true
-        )
+          await getDx(
+              lp1,
+              currentPrice,
+              await getPriceAtTick(3 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDx(
-          lp3,
-          await getPriceAtTick(6 * TICK_SPACING),
-          targetPrice,
-          true
-        )
+          await getDx(
+              lp3,
+              await getPriceAtTick(6 * TICK_SPACING),
+              targetPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -831,16 +840,16 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(9 * TICK_SPACING);
       const spanDx1 = await getDy(
-        lp1,
-        currentPrice,
-        await getPriceAtTick(3 * TICK_SPACING),
-        true
+          lp1,
+          currentPrice,
+          await getPriceAtTick(3 * TICK_SPACING),
+          true
       );
       const spanDx2 = await getDy(
-        lp3,
-        await getPriceAtTick(6 * TICK_SPACING),
-        targetPrice,
-        true
+          lp3,
+          await getPriceAtTick(6 * TICK_SPACING),
+          targetPrice,
+          true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
@@ -851,25 +860,25 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const spanDy1 = (
-        await getDx(
-          lp1,
-          currentPrice,
-          await getPriceAtTick(3 * TICK_SPACING),
-          true
-        )
+          await getDx(
+              lp1,
+              currentPrice,
+              await getPriceAtTick(3 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDx(
-          lp3,
-          await getPriceAtTick(6 * TICK_SPACING),
-          targetPrice,
-          true
-        )
+          await getDx(
+              lp3,
+              await getPriceAtTick(6 * TICK_SPACING),
+              targetPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -922,16 +931,16 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-5 * TICK_SPACING);
       const spanDx1 = await getDx(
-        lp1.add(lp2),
-        await getPriceAtTick(-4 * TICK_SPACING),
-        currentPrice,
-        true
+          lp1.add(lp2),
+          await getPriceAtTick(-4 * TICK_SPACING),
+          currentPrice,
+          true
       );
       const spanDx2 = await getDx(
-        lp2,
-        targetPrice,
-        await getPriceAtTick(-4 * TICK_SPACING),
-        true
+          lp2,
+          targetPrice,
+          await getPriceAtTick(-4 * TICK_SPACING),
+          true
       );
 
       const inputAmount = spanDx1.add(spanDx2);
@@ -943,25 +952,25 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const spanDy1 = (
-        await getDy(
-          lp1.add(lp2),
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
-        )
+          await getDy(
+              lp1.add(lp2),
+              await getPriceAtTick(-4 * TICK_SPACING),
+              currentPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDy(
-          lp2,
-          targetPrice,
-          await getPriceAtTick(-4 * TICK_SPACING),
-          true
-        )
+          await getDy(
+              lp2,
+              targetPrice,
+              await getPriceAtTick(-4 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -975,22 +984,22 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-8 * TICK_SPACING);
       const spanDx1 = await getDx(
-        lp1.add(lp2),
-        await getPriceAtTick(-4 * TICK_SPACING),
-        currentPrice,
-        true
+          lp1.add(lp2),
+          await getPriceAtTick(-4 * TICK_SPACING),
+          currentPrice,
+          true
       );
       const spanDx2 = await getDx(
-        lp2,
-        await getPriceAtTick(-7 * TICK_SPACING),
-        await getPriceAtTick(-4 * TICK_SPACING),
-        true
+          lp2,
+          await getPriceAtTick(-7 * TICK_SPACING),
+          await getPriceAtTick(-4 * TICK_SPACING),
+          true
       );
       const spanDx3 = await getDx(
-        lp2.add(lp3),
-        targetPrice,
-        await getPriceAtTick(-7 * TICK_SPACING),
-        true
+          lp2.add(lp3),
+          targetPrice,
+          await getPriceAtTick(-7 * TICK_SPACING),
+          true
       );
 
       const inputAmount = spanDx1.add(spanDx2).add(spanDx3);
@@ -1002,35 +1011,35 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const spanDy1 = (
-        await getDy(
-          lp1.add(lp2),
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
-        )
+          await getDy(
+              lp1.add(lp2),
+              await getPriceAtTick(-4 * TICK_SPACING),
+              currentPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDy(
-          lp2,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          await getPriceAtTick(-4 * TICK_SPACING),
-          true
-        )
+          await getDy(
+              lp2,
+              await getPriceAtTick(-7 * TICK_SPACING),
+              await getPriceAtTick(-4 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy3 = (
-        await getDy(
-          lp2.add(lp3),
-          targetPrice,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          true
-        )
+          await getDy(
+              lp2.add(lp3),
+              targetPrice,
+              await getPriceAtTick(-7 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2).add(spanDy3);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -1044,28 +1053,28 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(9 * TICK_SPACING);
       const spanDx1 = await getDy(
-        lp1.add(lp2),
-        currentPrice,
-        await getPriceAtTick(3 * TICK_SPACING),
-        true
+          lp1.add(lp2),
+          currentPrice,
+          await getPriceAtTick(3 * TICK_SPACING),
+          true
       );
       const spanDx2 = await getDy(
-        lp2,
-        await getPriceAtTick(3 * TICK_SPACING),
-        await getPriceAtTick(6 * TICK_SPACING),
-        true
+          lp2,
+          await getPriceAtTick(3 * TICK_SPACING),
+          await getPriceAtTick(6 * TICK_SPACING),
+          true
       );
       const spanDx3 = await getDy(
-        lp2.add(lp4),
-        await getPriceAtTick(6 * TICK_SPACING),
-        await getPriceAtTick(7 * TICK_SPACING),
-        true
+          lp2.add(lp4),
+          await getPriceAtTick(6 * TICK_SPACING),
+          await getPriceAtTick(7 * TICK_SPACING),
+          true
       );
       const spanDx4 = await getDy(
-        lp4,
-        await getPriceAtTick(7 * TICK_SPACING),
-        targetPrice,
-        true
+          lp4,
+          await getPriceAtTick(7 * TICK_SPACING),
+          targetPrice,
+          true
       );
 
       const inputAmount = spanDx1.add(spanDx2).add(spanDx3).add(spanDx4);
@@ -1077,45 +1086,45 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const spanDy1 = (
-        await getDx(
-          lp1.add(lp2),
-          currentPrice,
-          await getPriceAtTick(3 * TICK_SPACING),
-          true
-        )
+          await getDx(
+              lp1.add(lp2),
+              currentPrice,
+              await getPriceAtTick(3 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy2 = (
-        await getDx(
-          lp2,
-          await getPriceAtTick(3 * TICK_SPACING),
-          await getPriceAtTick(6 * TICK_SPACING),
-          true
-        )
+          await getDx(
+              lp2,
+              await getPriceAtTick(3 * TICK_SPACING),
+              await getPriceAtTick(6 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy3 = (
-        await getDx(
-          lp2.add(lp4),
-          await getPriceAtTick(6 * TICK_SPACING),
-          await getPriceAtTick(7 * TICK_SPACING),
-          true
-        )
+          await getDx(
+              lp2.add(lp4),
+              await getPriceAtTick(6 * TICK_SPACING),
+              await getPriceAtTick(7 * TICK_SPACING),
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const spanDy4 = (
-        await getDx(
-          lp4,
-          await getPriceAtTick(7 * TICK_SPACING),
-          targetPrice,
-          true
-        )
+          await getDx(
+              lp4,
+              await getPriceAtTick(7 * TICK_SPACING),
+              targetPrice,
+              true
+          )
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       const expectedOutput = spanDy1.add(spanDy2).add(spanDy3).add(spanDy4);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
@@ -1166,8 +1175,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token1;
       const expectedOutput = (await getDy(lp1, targetPrice, currentPrice, true))
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -1187,8 +1196,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = (await traderBalance()).token0;
       const expectedOutput = (await getDx(lp2, currentPrice, targetPrice, true))
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
       const poolPrice = (await pool.getPriceAndNearestTicks())._price;
 
       expect(withInPrecision(targetPrice, poolPrice, 8)).to.be.true;
@@ -1210,10 +1219,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-1 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -1237,10 +1246,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // THEN
       const result = after.sub(before).add(receipt.gasUsed.mul(tx.gasPrice!));
       const expectedOutput = (
-        await getDy(liquidity, targetPrice, currentPrice, true)
+          await getDy(liquidity, targetPrice, currentPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       expect(withInPrecision(result, expectedOutput, 8)).to.be.true;
     });
@@ -1250,33 +1259,33 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-1 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
       await clearBalance();
       await router.connect(trader).exactInputSingle(
-        {
-          tokenIn: ethers.constants.AddressZero,
-          amountIn: inputAmount,
-          amountOutMinimum: 0,
-          pool: nativePool.address,
-          to: trader.address,
-          unwrap: false,
-        },
-        { value: inputAmount }
+          {
+            tokenIn: ethers.constants.AddressZero,
+            amountIn: inputAmount,
+            amountOutMinimum: 0,
+            pool: nativePool.address,
+            to: trader.address,
+            unwrap: false,
+          },
+          {value: inputAmount}
       );
 
       // THEN
       const balance = await traderBalance();
       const expectedOutput = (
-        await getDy(liquidity, targetPrice, currentPrice, true)
+          await getDy(liquidity, targetPrice, currentPrice, true)
       )
-        .mul(SWAP_BASE - SWAP_FEE)
-        .div(SWAP_BASE);
+          .mul(SWAP_BASE - SWAP_FEE)
+          .div(SWAP_BASE);
 
       expect(withInPrecision(balance.token0, expectedOutput, 8)).to.be.true;
     });
@@ -1297,10 +1306,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-1 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -1331,10 +1340,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-1 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -1362,10 +1371,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-1 * TICK_SPACING);
       const inputAmount = await getDx(
-        liquidity,
-        targetPrice,
-        currentPrice,
-        true
+          liquidity,
+          targetPrice,
+          currentPrice,
+          true
       );
 
       // WHEN
@@ -1375,15 +1384,15 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token1.connect(trader).approve(router.address, inputAmount);
 
       await router.connect(trader).exactInput(
-        {
-          tokenIn: ethers.constants.AddressZero,
-          amountIn: inputAmount,
-          amountOutMinimum: 0,
-          path: [nativePool.address, pool.address],
-          to: trader.address,
-          unwrap: false,
-        },
-        { value: inputAmount }
+          {
+            tokenIn: ethers.constants.AddressZero,
+            amountIn: inputAmount,
+            amountOutMinimum: 0,
+            path: [nativePool.address, pool.address],
+            to: trader.address,
+            unwrap: false,
+          },
+          {value: inputAmount}
       );
 
       const balance = await traderBalance();
@@ -1406,9 +1415,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const inputAmount = ethers.utils.parseEther("1");
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        pool.address,
-        token0.address,
-        inputAmount
+          pool.address,
+          token0.address,
+          inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
@@ -1418,14 +1427,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token0.connect(trader).approve(router.address, inputAmount);
 
       await expect(
-        router.connect(trader).exactOutputSingle({
-          tokenIn: token0.address,
-          amountOut: outputAmount,
-          amountInMaximum: 0,
-          pool: pool.address,
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactOutputSingle({
+            tokenIn: token0.address,
+            amountOut: outputAmount,
+            amountInMaximum: 0,
+            pool: pool.address,
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
@@ -1433,9 +1442,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const inputAmount = ethers.utils.parseEther("1");
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        nativePool.address,
-        ethers.constants.AddressZero,
-        inputAmount
+          nativePool.address,
+          ethers.constants.AddressZero,
+          inputAmount
       );
       const amountOut = exactInputSingle.amountOut;
 
@@ -1443,17 +1452,17 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await clearBalance();
 
       await expect(
-        router.connect(trader).exactOutputSingle(
-          {
-            tokenIn: ethers.constants.AddressZero,
-            amountOut,
-            amountInMaximum: inputAmount,
-            pool: pool.address,
-            to: trader.address,
-            unwrap: false,
-          },
-          { value: inputAmount.div(2) }
-        )
+          router.connect(trader).exactOutputSingle(
+              {
+                tokenIn: ethers.constants.AddressZero,
+                amountOut,
+                amountInMaximum: inputAmount,
+                pool: pool.address,
+                to: trader.address,
+                unwrap: false,
+              },
+              {value: inputAmount.div(2)}
+          )
       ).to.be.reverted;
     });
 
@@ -1461,9 +1470,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const inputAmount = ethers.utils.parseEther("1");
 
       const exactInputSingle = await swapHelper.calculateExactInput(
-        [pool.address, nativePool.address],
-        token1.address,
-        inputAmount
+          [pool.address, nativePool.address],
+          token1.address,
+          inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
@@ -1473,14 +1482,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token0.connect(trader).approve(router.address, inputAmount);
 
       await expect(
-        router.connect(trader).exactOutput({
-          tokenIn: token0.address,
-          amountOut: outputAmount,
-          amountInMaximum: 0,
-          path: [pool.address, nativePool.address],
-          to: trader.address,
-          unwrap: false,
-        })
+          router.connect(trader).exactOutput({
+            tokenIn: token0.address,
+            amountOut: outputAmount,
+            amountInMaximum: 0,
+            path: [pool.address, nativePool.address],
+            to: trader.address,
+            unwrap: false,
+          })
       ).to.be.reverted;
     });
 
@@ -1488,9 +1497,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const inputAmount = ethers.utils.parseEther("1");
 
       const exactInputSingle = await swapHelper.calculateExactInput(
-        [nativePool.address, pool.address],
-        ethers.constants.AddressZero,
-        inputAmount
+          [nativePool.address, pool.address],
+          ethers.constants.AddressZero,
+          inputAmount
       );
       const amountOut = exactInputSingle.amountOut;
 
@@ -1498,17 +1507,17 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await clearBalance();
 
       await expect(
-        router.connect(trader).exactOutput(
-          {
-            tokenIn: ethers.constants.AddressZero,
-            amountOut,
-            amountInMaximum: inputAmount,
-            path: [nativePool.address, pool.address],
-            to: trader.address,
-            unwrap: false,
-          },
-          { value: inputAmount.div(2) }
-        )
+          router.connect(trader).exactOutput(
+              {
+                tokenIn: ethers.constants.AddressZero,
+                amountOut,
+                amountInMaximum: inputAmount,
+                path: [nativePool.address, pool.address],
+                to: trader.address,
+                unwrap: false,
+              },
+              {value: inputAmount.div(2)}
+          )
       ).to.be.reverted;
     });
 
@@ -1517,9 +1526,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token0;
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        pool.address,
-        tokenIn.address,
-        inputAmount
+          pool.address,
+          tokenIn.address,
+          inputAmount
       );
       const amountOut = exactInputSingle.amountOut;
 
@@ -1543,9 +1552,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const inputAmount = ethers.utils.parseEther("1");
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        nativePool.address,
-        ethers.constants.AddressZero,
-        inputAmount
+          nativePool.address,
+          ethers.constants.AddressZero,
+          inputAmount
       );
       const amountOut = exactInputSingle.amountOut;
 
@@ -1553,15 +1562,15 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await clearBalance();
 
       await router.connect(trader).exactOutputSingle(
-        {
-          tokenIn: ethers.constants.AddressZero,
-          amountOut,
-          amountInMaximum: inputAmount,
-          pool: nativePool.address,
-          to: trader.address,
-          unwrap: false,
-        },
-        { value: inputAmount }
+          {
+            tokenIn: ethers.constants.AddressZero,
+            amountOut,
+            amountInMaximum: inputAmount,
+            pool: nativePool.address,
+            to: trader.address,
+            unwrap: false,
+          },
+          {value: inputAmount}
       );
       expect(await token0.balanceOf(trader.address)).to.be.eq(amountOut);
     });
@@ -1571,9 +1580,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token0;
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        nativePool.address,
-        ethers.constants.AddressZero,
-        inputAmount
+          nativePool.address,
+          ethers.constants.AddressZero,
+          inputAmount
       );
       const amountOut = exactInputSingle.amountOut;
 
@@ -1593,8 +1602,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const receipt = await tx.wait();
 
       const result = (await trader.getBalance())
-        .add(tx.gasPrice!.mul(receipt.gasUsed))
-        .sub(before);
+          .add(tx.gasPrice!.mul(receipt.gasUsed))
+          .sub(before);
       expect(result).to.be.eq(amountOut);
     });
   });
@@ -1638,9 +1647,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token0;
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        pool.address,
-        tokenIn.address,
-        inputAmount
+          pool.address,
+          tokenIn.address,
+          inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
@@ -1658,9 +1667,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       });
 
       const realOutput =
-        tokenIn.address === token0.address
-          ? await token1.balanceOf(trader.address)
-          : await token0.balanceOf(trader.address);
+          tokenIn.address === token0.address
+              ? await token1.balanceOf(trader.address)
+              : await token0.balanceOf(trader.address);
 
       expect(realOutput).to.be.eq(outputAmount);
     });
@@ -1672,9 +1681,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token1;
 
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-        pool.address,
-        tokenIn.address,
-        inputAmount
+          pool.address,
+          tokenIn.address,
+          inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
@@ -1692,9 +1701,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       });
 
       const realOutput =
-        tokenIn.address === token0.address
-          ? await token1.balanceOf(trader.address)
-          : await token0.balanceOf(trader.address);
+          tokenIn.address === token0.address
+              ? await token1.balanceOf(trader.address)
+              : await token0.balanceOf(trader.address);
 
       expect(realOutput).to.be.eq(outputAmount);
     });
@@ -1706,9 +1715,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token1;
 
       const exactInput = await swapHelper.calculateExactInput(
-        [pool.address, nativePool.address],
-        tokenIn.address,
-        inputAmount
+          [pool.address, nativePool.address],
+          tokenIn.address,
+          inputAmount
       );
       const outputAmount = exactInput.amountOut;
 
@@ -1736,23 +1745,23 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = ethers.constants.AddressZero;
 
       const exactInput = await swapHelper.calculateExactInput(
-        [nativePool.address, pool.address],
-        tokenIn,
-        inputAmount
+          [nativePool.address, pool.address],
+          tokenIn,
+          inputAmount
       );
       const outputAmount = exactInput.amountOut;
 
       // WHEN
       await router.connect(trader).exactOutput(
-        {
-          tokenIn,
-          amountOut: outputAmount,
-          amountInMaximum: inputAmount,
-          path: [nativePool.address, pool.address],
-          to: trader.address,
-          unwrap: false,
-        },
-        { value: inputAmount }
+          {
+            tokenIn,
+            amountOut: outputAmount,
+            amountInMaximum: inputAmount,
+            path: [nativePool.address, pool.address],
+            to: trader.address,
+            unwrap: false,
+          },
+          {value: inputAmount}
       );
 
       const realOutput = await token1.balanceOf(trader.address);
@@ -1766,9 +1775,9 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const tokenIn = token1;
 
       const exactInput = await swapHelper.calculateExactInput(
-        [pool.address, nativePool.address],
-        tokenIn.address,
-        inputAmount
+          [pool.address, nativePool.address],
+          tokenIn.address,
+          inputAmount
       );
       const outputAmount = exactInput.amountOut;
 
@@ -1788,8 +1797,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       const receipt = await tx.wait();
 
       const realOutput = (await trader.getBalance())
-        .add(receipt.gasUsed.mul(tx.gasPrice!))
-        .sub(before);
+          .add(receipt.gasUsed.mul(tx.gasPrice!))
+          .sub(before);
       expect(realOutput).to.be.eq(outputAmount);
     });
   });
@@ -1804,8 +1813,8 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       await token1.connect(trader).mint(trader.address, inputAmount);
       await token1.connect(trader).transfer(router.address, inputAmount);
       await router
-        .connect(trader)
-        .sweep(token1.address, inputAmount, trader.address);
+          .connect(trader)
+          .sweep(token1.address, inputAmount, trader.address);
 
       const balance = await traderBalance();
 
@@ -1820,10 +1829,10 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       // WHEN
       await clearBalance();
       await router
-        .connect(trader)
-        .sweep(ethers.constants.AddressZero, inputAmount, trader.address, {
-          value: inputAmount,
-        });
+          .connect(trader)
+          .sweep(ethers.constants.AddressZero, inputAmount, trader.address, {
+            value: inputAmount,
+          });
       const result = await wklay.balanceOf(trader.address);
 
       // THEN

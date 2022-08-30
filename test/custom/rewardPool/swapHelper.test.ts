@@ -1,13 +1,13 @@
 import { ethers, network } from "hardhat";
 import {
-  PoolRouter,
   ERC20Test,
   MasterDeployer,
-  WETH10,
-  SwapHelper,
-  RewardLiquidityPoolManager,
-  RewardLiquidityPoolFactory,
+  PoolRouter,
   RewardLiquidityPool,
+  RewardLiquidityPoolFactory,
+  RewardLiquidityPoolManager,
+  SwapHelper,
+  WETH10,
 } from "../../../types";
 import { BigNumber, BigNumberish } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
@@ -50,8 +50,8 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     pangea = await RewardPangea.Instance.init();
     wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
-    poolFactory = pangea.concentratedPoolFactory;
-    poolManager = pangea.concentratedPoolManager;
+    poolFactory = pangea.poolFactory;
+    poolManager = pangea.poolManager;
     router = pangea.router;
     swapHelper = pangea.swapHelper;
 
@@ -64,10 +64,12 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     rewardToken = (await Token.deploy("Reward", "R", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableFeeAndTickSpacing(
-      SWAP_FEE,
-      TICK_SPACING,
-      true
+    await poolFactory.setAvailableParameter(
+      token0.address,
+      token1.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
       poolFactory.address,
@@ -88,6 +90,15 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
       token0.address.toLowerCase() < wklay.address.toLowerCase()
         ? [token0.address, wklay.address]
         : [wklay.address, token0.address];
+
+    await poolFactory.setAvailableParameter(
+      tokenN0,
+      tokenN1,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
+    );
+
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(

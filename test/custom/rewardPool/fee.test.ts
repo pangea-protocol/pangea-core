@@ -1,13 +1,13 @@
 import { ethers, network } from "hardhat";
 import {
-  PoolRouter,
-  ERC20Test,
-  MasterDeployer,
-  IProtocolFeeReceiver,
   ERC20__factory,
+  ERC20Test,
+  IProtocolFeeReceiver,
+  MasterDeployer,
+  PoolRouter,
+  RewardLiquidityPool,
   RewardLiquidityPoolFactory,
   RewardLiquidityPoolManager,
-  RewardLiquidityPool,
 } from "../../../types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
@@ -67,8 +67,8 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     // ======== CONTRACT ==========
     pangea = await RewardPangea.Instance.init();
     masterDeployer = pangea.masterDeployer;
-    poolFactory = pangea.concentratedPoolFactory;
-    poolManager = pangea.concentratedPoolManager;
+    poolFactory = pangea.poolFactory;
+    poolManager = pangea.poolManager;
     router = pangea.router;
 
     await masterDeployer.setAirdropDistributor(airdropDistributor.address);
@@ -91,10 +91,12 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     );
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableFeeAndTickSpacing(
-      SWAP_FEE,
-      TICK_SPACING,
-      true
+    await poolFactory.setAvailableParameter(
+      token0.address,
+      token1.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
       poolFactory.address,

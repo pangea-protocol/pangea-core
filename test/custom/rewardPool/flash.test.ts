@@ -52,8 +52,8 @@ describe("Reward Liquidity Pool SCENARIO:FLASH", function () {
     pangea = await RewardPangea.Instance.init();
     wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
-    poolManager = pangea.concentratedPoolManager;
-    poolFactory = pangea.concentratedPoolFactory;
+    poolManager = pangea.poolManager;
+    poolFactory = pangea.poolFactory;
 
     // ======== TOKENS ==========
     const Token = await ethers.getContractFactory("ERC20Test");
@@ -64,10 +64,12 @@ describe("Reward Liquidity Pool SCENARIO:FLASH", function () {
     rewardToken = (await Token.deploy("Reward", "R", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableFeeAndTickSpacing(
-      SWAP_FEE,
-      TICK_SPACING,
-      true
+    await poolFactory.setAvailableParameter(
+      token0.address,
+      token1.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
       poolFactory.address,
