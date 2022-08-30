@@ -8,9 +8,9 @@ import {
   KORC,
   MasterDeployer,
   MiningPool,
+  MiningPoolFactory,
   MiningPoolManager,
   PoolLogger,
-  RewardLiquidityPoolFactory,
   TickIndex,
   WETH10,
 } from "../../types";
@@ -29,12 +29,17 @@ const deployFunction: DeployFunction = async function (
       network
     }: HardhatRuntimeEnvironment) {
   if (!await isLocalTestNetwork()) return;
-  console.log("DEPLOY FOR CUSTOM POOL : REWARD LIQUIDITY POOL")
+  console.log("DEPLOY FOR CUSTOM POOL : MINING POOL")
   await network.provider.send("evm_setAutomine", [false]);
   await network.provider.send("evm_setIntervalMining", [1]);
 
-  const {deploy, deterministic} = deployments;
+  const {deploy} = deployments;
   const {deployer, dev} = await ethers.getNamedSigners();
+
+  const masterDeployer = await ethers.getContract("MasterDeployer");
+  const poolLogger = await ethers.getContract("PoolLogger");
+  const weth = await ethers.getContract("WETH10");
+  const tickIndex = await ethers.getContract<TickIndex>("TickIndex");
 
   const {address: RewardTicks} = await deploy("RewardTicks", {
     from: deployer.address,
@@ -43,18 +48,14 @@ const deployFunction: DeployFunction = async function (
     log: true
   });
 
-  const {address: RewardLiquidityPoolFactoryLib} = await deploy("RewardLiquidityPoolFactoryLib", {
+  const {address: poolImplementation} = await deploy("MiningPool", {
     from: deployer.address,
-    deterministicDeployment: false,
-    waitConfirmations: await waitConfirmations(),
+    libraries: {RewardTicks},
     log: true,
-    libraries: {RewardTicks}
+    waitConfirmations: await waitConfirmations(),
   });
 
-  const masterDeployer = await ethers.getContract<MasterDeployer>('MasterDeployer');
-  const poolLogger = await ethers.getContract<PoolLogger>("PoolLogger");
-
-  const deployResult = await deploy("RewardLiquidityPoolFactory", {
+  const deployResult = await deploy("MiningPoolFactory", {
     from: deployer.address,
     proxy: {
       owner: dev.address,
@@ -62,23 +63,19 @@ const deployFunction: DeployFunction = async function (
       execute: {
         init: {
           methodName: "initialize",
-          args: [masterDeployer.address, poolLogger.address]
+          args: [poolImplementation, masterDeployer.address, poolLogger.address]
         }
       }
-    },
-    libraries: {
-      RewardLiquidityPoolFactoryLib
     },
     log: true,
     waitConfirmations: await waitConfirmations(),
   });
 
-  await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address));
+  if (!(await masterDeployer.whitelistedFactories(deployResult.address))) {
+    await doTransaction(masterDeployer.addToWhitelistFactory(deployResult.address));
+  }
 
-  const tickIndex = await ethers.getContract<TickIndex>("TickIndex");
-  const weth = await ethers.getContract<WETH10>("WETH10");
-
-  await deploy("RewardLiquidityPoolManager", {
+  await deploy("MiningPoolManager", {
     from: deployer.address,
     proxy: {
       owner: dev.address,
@@ -86,18 +83,18 @@ const deployFunction: DeployFunction = async function (
       execute: {
         init: {
           methodName: "initialize",
-          args: [masterDeployer.address, weth.address],
+          args: [masterDeployer.address, weth.address]
         }
       }
     },
+    log: true,
     libraries: {TickIndex: tickIndex.address},
-    log: true,
     waitConfirmations: await waitConfirmations(),
-  });
+  })
 
   console.log("CREATE REWARD LIQUIDITY POOL")
 
-  const factory = await ethers.getContract<RewardLiquidityPoolFactory>("RewardLiquidityPoolFactory");
+  const factory = await ethers.getContract<MiningPoolFactory>("MiningPoolFactory");
   const KDAI = await ethers.getContract<KDAI>("KDAI")
   const WKLAY = await ethers.getContract<WETH10>("WETH10")
   const KORC = await ethers.getContract<KORC>("KORC")
@@ -108,20 +105,21 @@ const deployFunction: DeployFunction = async function (
    * | 1002    | WKLAY  | KORC   | KDAI   | 0.20% | 200,000        | 216,600        |
    */
   if ((await factory.poolsCount(KDAI.address, KORC.address)).eq(0)) {
-    const data = createDeployData(
+    const [tokens, data] = createDeployData(
         KDAI.address, KORC.address, WKLAY.address, 2000, parseUnits("200000", await KDAI.decimals()), parseUnits("10400000", await KORC.decimals())
     )
+    await doTransaction(factory.setAvailableParameter(tokens[0], tokens[1], WKLAY.address, 2000, getTickSpacing(2000)))
     await doTransaction(masterDeployer.deployPool(factory.address, data));
   }
 
-  console.log("CREATE REWARD LIQUIDITY POOL")
   const poolHelper = await ethers.getContract<ConcentratedLiquidityPoolHelper>("ConcentratedLiquidityPoolHelper")
-  const poolManager = await ethers.getContract<MiningPoolManager>("RewardLiquidityPoolManager")
+  const poolManager = await ethers.getContract<MiningPoolManager>("MiningPoolManager")
 
   if ((await factory.poolsCount(WKLAY.address, KORC.address)).eq(0)) {
-    const data = createDeployData(
+    const [tokens, data] = createDeployData(
         WKLAY.address, KORC.address, KDAI.address, 2000, parseUnits("200000", await WKLAY.decimals()), parseUnits("216600", await KORC.decimals())
     )
+    await doTransaction(factory.setAvailableParameter(tokens[0], tokens[1], KDAI.address, 2000, getTickSpacing(2000)))
     await doTransaction(masterDeployer.deployPool(factory.address, data));
   }
 
@@ -147,7 +145,7 @@ const deployFunction: DeployFunction = async function (
   }
 
   const addLiquidity = async (user: SignerWithAddress, poolAddress: string, amount0: BigNumberish, amount1: BigNumberish, lower: number, upper: number) => {
-    const pool = await ethers.getContractAt<MiningPool>('RewardLiquidityPool', poolAddress);
+    const pool = await ethers.getContractAt<MiningPool>('MiningPool', poolAddress);
     const assets = await pool.getAssets()
     const tickSpacing = (await pool.getImmutables())._tickSpacing;
 
@@ -227,7 +225,7 @@ const deployFunction: DeployFunction = async function (
   const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributor")
 
   const mintAndAirdrop = async (poolAddress: string, amount: BigNumberish) => {
-    const pool = await ethers.getContractAt("RewardLiquidityPool", poolAddress) as MiningPool;
+    const pool = await ethers.getContractAt("MiningPool", poolAddress) as MiningPool;
     const tokenAddress = (await pool.rewardToken())
     if (tokenAddress == WKLAY.address) {
       amount = ethers.utils.parseEther(amount.toString())
@@ -286,7 +284,7 @@ function createDeployData(token0: string, token1: string, rewardToken: string, f
     [token0Amount, token1Amount] = [token1Amount, token0Amount];
   }
   const price = priceRatioX96(token1Amount, token0Amount);
-  return encodeData(token0, token1, rewardToken, fee, price, getTickSpacing(fee));
+  return [[token0, token1], encodeData(token0, token1, rewardToken, fee, price, getTickSpacing(fee))];
 }
 
 export function getTickSpacing(feeAmount: number) {
