@@ -7,6 +7,9 @@ import "../../../interfaces/IConcentratedLiquidityPool.sol";
 
 /// @notice Reward Liquidity Pool interface.
 interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
+    ///
+    function initialize(bytes memory _deployData, address _masterDeployer) external;
+
     /// @notice reward Token
     function rewardToken() external view returns (address);
 

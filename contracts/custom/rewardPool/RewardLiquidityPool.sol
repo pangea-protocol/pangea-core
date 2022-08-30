@@ -16,6 +16,7 @@ pragma solidity >=0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../../interfaces/IMasterDeployer.sol";
 import "../../interfaces/IPositionManager.sol";
 import "../../interfaces/IPoolEventStruct.sol";
@@ -35,7 +36,13 @@ import "./libraries/RewardTicks.sol";
 import "./interfaces/IRewardLiquidityPoolStruct.sol";
 
 /// @notice Custom Pool : Reward liquidity pool, it's for liquidity mining using reward token
-contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee {
+contract RewardLiquidityPool is
+    IRewardLiquidityPoolStruct,
+    IConcentratedLiquidityPoolStruct,
+    IPoolFactoryCallee,
+    LPAirdropCallee,
+    Initializable
+{
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -43,18 +50,18 @@ contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidi
     uint256 public constant protocolFee = 1000;
 
     /// @dev Reference: tickSpacing of 100 -> 1% between ticks.
-    uint24 public immutable tickSpacing;
+    uint24 public tickSpacing;
 
     /// @dev 1000 corresponds to 0.1% fee. Fee is measured in pips.
-    uint24 public immutable swapFee;
-    uint128 internal immutable MAX_TICK_LIQUIDITY;
+    uint24 public swapFee;
+    uint128 internal MAX_TICK_LIQUIDITY;
 
-    IMasterDeployer internal immutable masterDeployer;
+    IMasterDeployer internal masterDeployer;
     IPoolLogger internal logger;
 
-    address public immutable token0;
-    address public immutable token1;
-    address public immutable factory;
+    address public token0;
+    address public token1;
+    address public factory;
 
     uint128 public liquidity;
 
@@ -81,7 +88,7 @@ contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidi
     uint256 public airdropPeriod;
 
     /// @dev related to reward Token System
-    address public immutable rewardToken;
+    address public rewardToken;
 
     /// @dev reward fee growth counters are multiplied by 2 ^ 128.
     uint256 internal rewardGrowthGlobal_;
@@ -111,8 +118,8 @@ contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidi
     /// @dev reward information per position (rewardGrowthInsideLast & rewardOwed)
     mapping(address => mapping(int24 => mapping(int24 => PositionReward))) public positionRewards;
 
-    uint256 public immutable createdTime;
-    uint256 public immutable createdBlockNumber;
+    uint256 public createdTime;
+    uint256 public createdBlockNumber;
 
     /// @dev Error list to optimize around pool requirements.
     error Locked();
@@ -138,8 +145,7 @@ contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidi
         unlocked = 1;
     }
 
-    /// @dev Only set immutable variables here - state changes made here will not be used.
-    constructor(bytes memory _deployData, address _masterDeployer) {
+    function initialize(bytes memory _deployData, address _masterDeployer) external initializer {
         (address _token0, address _token1, address _rewardToken, uint24 _swapFee, uint24 _tickSpacing) = abi.decode(
             _deployData,
             (address, address, address, uint24, uint24)
@@ -360,7 +366,8 @@ contract RewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidi
             nextTickToCross: zeroForOne ? nearestTick : ticks[nearestTick].nextTick
         });
 
-        _updateObservationRecord(); // @dev for update rewardGrowthGlobal_
+        _updateObservationRecord();
+        // @dev for update rewardGrowthGlobal_
         uint256 cachedRewardGrowthGlobal = rewardGrowthGlobal_;
 
         _ensureLiquidityForSwap(cache);
