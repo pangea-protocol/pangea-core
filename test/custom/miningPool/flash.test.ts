@@ -3,16 +3,16 @@ import {
   ERC20Test,
   FlashCallbackMock,
   MasterDeployer,
-  RewardLiquidityPool,
-  RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
+  MiningPool,
+  MiningPoolFactory,
+  MiningPoolManager,
   WETH10,
 } from "../../../types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { sortTokens } from "../../harness/utils";
 import { describe } from "mocha";
-import { RewardPangea } from "./RewardPangea";
+import { MiningPangea } from "./MiningPangea";
 import { expect } from "chai";
 
 /**
@@ -30,12 +30,12 @@ describe("Reward Liquidity Pool SCENARIO:FLASH", function () {
   let liquidityProvider: SignerWithAddress;
   let trader: SignerWithAddress;
 
-  let pangea: RewardPangea;
+  let pangea: MiningPangea;
   let wklay: WETH10;
   let masterDeployer: MasterDeployer;
-  let poolManager: RewardLiquidityPoolManager;
-  let poolFactory: RewardLiquidityPoolFactory;
-  let pool: RewardLiquidityPool;
+  let poolManager: MiningPoolManager;
+  let poolFactory: MiningPoolFactory;
+  let pool: MiningPool;
   let token0: ERC20Test;
   let token1: ERC20Test;
   let rewardToken: ERC20Test;
@@ -49,7 +49,7 @@ describe("Reward Liquidity Pool SCENARIO:FLASH", function () {
     [deployer, liquidityProvider, trader] = await ethers.getSigners();
 
     // ======== CONTRACT ==========
-    pangea = await RewardPangea.Instance.init();
+    pangea = await MiningPangea.Instance.init();
     wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
     poolManager = pangea.poolManager;
@@ -89,10 +89,7 @@ describe("Reward Liquidity Pool SCENARIO:FLASH", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
-    pool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
-      poolAddress
-    );
+    pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
 
     callback = (await (
       await ethers.getContractFactory("FlashCallbackMock")

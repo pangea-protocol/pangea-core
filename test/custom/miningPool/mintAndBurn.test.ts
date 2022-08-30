@@ -2,18 +2,18 @@ import { ethers, network } from "hardhat";
 import {
   ERC20Test,
   MasterDeployer,
+  MiningPool,
+  MiningPoolFactory,
+  MiningPoolManager,
   PoolRouter,
   PositionHelper,
-  RewardLiquidityPool,
-  RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
   WETH10,
 } from "../../../types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 import { sortTokens } from "../../harness/utils";
-import { RewardPangea } from "./RewardPangea";
+import { MiningPangea } from "./MiningPangea";
 
 /**
  * Test for Mint & Burn in Reward Liquidity Pool
@@ -43,12 +43,12 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
   let trader: SignerWithAddress;
   let liquidityProvider: SignerWithAddress;
 
-  let pangea: RewardPangea;
+  let pangea: MiningPangea;
   let masterDeployer: MasterDeployer;
-  let poolFactory: RewardLiquidityPoolFactory;
-  let poolManager: RewardLiquidityPoolManager;
-  let pool: RewardLiquidityPool;
-  let nativePool: RewardLiquidityPool;
+  let poolFactory: MiningPoolFactory;
+  let poolManager: MiningPoolManager;
+  let pool: MiningPool;
+  let nativePool: MiningPool;
   let positionHelper: PositionHelper;
   let router: PoolRouter;
   let token0: ERC20Test;
@@ -63,7 +63,7 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
     [deployer, trader, liquidityProvider] = await ethers.getSigners();
 
     // ======== CONTRACT ==========
-    pangea = await RewardPangea.Instance.init();
+    pangea = await MiningPangea.Instance.init();
     masterDeployer = pangea.masterDeployer;
     poolFactory = pangea.poolFactory;
     poolManager = pangea.poolManager;
@@ -151,16 +151,13 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
-    pool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
-      poolAddress
-    );
+    pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
 
     const nativePoolAddress = (
       await poolFactory.getPools(token0.address, wklay.address, 0, 1)
     )[0];
-    nativePool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
+    nativePool = await ethers.getContractAt<MiningPool>(
+      "MiningPool",
       nativePoolAddress
     );
 

@@ -1,25 +1,23 @@
-import {ethers, network} from "hardhat";
+import { ethers, network } from "hardhat";
 import {
   ERC20Test,
   MasterDeployer,
-  MockRewardLiquidityPool,
+  MiningPoolFactory,
+  MiningPoolManager,
+  MockMiningPool,
   PoolRouter,
-  RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
 } from "../../../types";
-import {BigNumber} from "ethers";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {sortTokens} from "../../harness/utils";
-import {RewardPangea} from "./RewardPangea";
-import {expect} from "chai";
+import { BigNumber } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { sortTokens } from "../../harness/utils";
+import { MiningPangea } from "./MiningPangea";
+import { expect } from "chai";
 
 describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 0;
   const TICK_SPACING = 40;
   const DAY = 3600 * 24;
-  const WEEK = DAY * 7;
-  const DUST_VALUE_LIMIT = 10;
 
   let _snapshotId: string;
   let snapshotId: string;
@@ -29,11 +27,11 @@ describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
   let trader: SignerWithAddress;
   let airdrop: SignerWithAddress;
 
-  let pangea: RewardPangea;
+  let pangea: MiningPangea;
   let masterDeployer: MasterDeployer;
-  let poolFactory: RewardLiquidityPoolFactory;
-  let poolManager: RewardLiquidityPoolManager;
-  let pool: MockRewardLiquidityPool;
+  let poolFactory: MiningPoolFactory;
+  let poolManager: MiningPoolManager;
+  let pool: MockMiningPool;
   let router: PoolRouter;
   let token0: ERC20Test;
   let token1: ERC20Test;
@@ -46,7 +44,7 @@ describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
     [deployer, liquidityProvider, trader, airdrop] = await ethers.getSigners();
 
     // ======== CONTRACT ==========
-    pangea = await RewardPangea.Instance.init();
+    pangea = await MiningPangea.Instance.init();
     masterDeployer = pangea.masterDeployer;
     poolFactory = pangea.poolFactory;
     poolManager = pangea.poolManager;
@@ -62,34 +60,34 @@ describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
 
     // ======== DEPLOY POOL ========
     await poolFactory.setAvailableParameter(
-        token0.address,
-        token1.address,
-        rewardToken.address,
-        BigNumber.from(SWAP_FEE),
-        BigNumber.from(TICK_SPACING)
+      token0.address,
+      token1.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
-        poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              rewardToken.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      poolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          rewardToken.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
     await masterDeployer.setAirdropDistributor(airdrop.address);
 
     const poolAddress = (
-        await poolFactory.getPools(token0.address, token1.address, 0, 1)
+      await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
-    pool = await ethers.getContractAt<MockRewardLiquidityPool>(
-        "MockRewardLiquidityPool",
-        poolAddress
+    pool = await ethers.getContractAt<MockMiningPool>(
+      "MockMiningPool",
+      poolAddress
     );
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
@@ -112,13 +110,10 @@ describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
       const tickLibrary = await ethers.getContractFactory("RewardTicks");
       const clpLibs = {};
       clpLibs["RewardTicks"] = (await tickLibrary.deploy()).address;
-      const MockRewardLiquidityPool = await ethers.getContractFactory(
-          "MockRewardLiquidityPool",
-          {
-            libraries: clpLibs,
-          }
-      );
-      mockPoolAddress = (await MockRewardLiquidityPool.deploy()).address;
+      const MockMiningPool = await ethers.getContractFactory("MockMiningPool", {
+        libraries: clpLibs,
+      });
+      mockPoolAddress = (await MockMiningPool.deploy()).address;
     });
 
     it("try to upgrade pool Spec", async () => {
@@ -126,13 +121,13 @@ describe("Reward Liquidity Pool UNIT TEST : FACTORY", function () {
       await poolFactory.setPoolImplementation(mockPoolAddress);
 
       // before fail
-      await expect(pool.greet()).to.be.reverted
+      await expect(pool.greet()).to.be.reverted;
 
       // if upgrade pools,
       await poolFactory.upgradePools([pool.address]);
 
       // then success
-      expect(await pool.greet()).to.be.eq('hello');
+      expect(await pool.greet()).to.be.eq("hello");
     });
   });
 });

@@ -17,32 +17,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../../interfaces/IMasterDeployer.sol";
-import "../../interfaces/IPositionManager.sol";
-import "../../interfaces/IPoolEventStruct.sol";
-import "../../interfaces/IPoolLogger.sol";
-import "../../interfaces/IPoolFlashCallback.sol";
-import "../../interfaces/IConcentratedLiquidityPool.sol";
-import "../../interfaces/LPAirdropCallee.sol";
-import "../../interfaces/IPoolFactoryCallee.sol";
-import "../../interfaces/IProtocolFeeReceiver.sol";
-import "../../libraries/FullMath.sol";
-import "../../libraries/TickMath.sol";
-import "../../libraries/UnsafeMath.sol";
-import "../../libraries/DyDxMath.sol";
-import "../../libraries/FeeLib.sol";
-import "../../libraries/FixedPoint.sol";
-import "./libraries/RewardTicks.sol";
-import "./interfaces/IRewardLiquidityPoolStruct.sol";
+import "../../../interfaces/IMasterDeployer.sol";
+import "../../../interfaces/IPositionManager.sol";
+import "../../../interfaces/IPoolEventStruct.sol";
+import "../../../interfaces/IPoolLogger.sol";
+import "../../../interfaces/IPoolFlashCallback.sol";
+import "../../../interfaces/IConcentratedLiquidityPool.sol";
+import "../../../interfaces/LPAirdropCallee.sol";
+import "../../../interfaces/IPoolFactoryCallee.sol";
+import "../../../interfaces/IProtocolFeeReceiver.sol";
+import "../../../libraries/FullMath.sol";
+import "../../../libraries/TickMath.sol";
+import "../../../libraries/UnsafeMath.sol";
+import "../../../libraries/DyDxMath.sol";
+import "../../../libraries/FeeLib.sol";
+import "../../../libraries/FixedPoint.sol";
+import "./../libraries/RewardTicks.sol";
+import "./../interfaces/IMiningPoolStruct.sol";
 
 /// @notice Custom Pool : Reward liquidity pool, it's for liquidity mining using reward token
-contract RewardLiquidityPool is
-    IRewardLiquidityPoolStruct,
-    IConcentratedLiquidityPoolStruct,
-    IPoolFactoryCallee,
-    LPAirdropCallee,
-    Initializable
-{
+contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee, Initializable {
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -143,6 +137,10 @@ contract RewardLiquidityPool is
         unlocked = 2;
         _;
         unlocked = 1;
+    }
+
+    function greet() external view returns (string memory) {
+        return "hello";
     }
 
     function initialize(bytes memory _deployData, address _masterDeployer) external initializer {

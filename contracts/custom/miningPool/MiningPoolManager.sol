@@ -26,23 +26,23 @@ import "../../libraries/DyDxMath.sol";
 import "../../libraries/FixedPoint.sol";
 import "../../abstract/PangeaBatchable.sol";
 import "../../abstract/PangeaERC721.sol";
-import "./interfaces/IRewardLiquidityPoolManagerStruct.sol";
-import "./interfaces/IRewardLiquidityPoolManagerEvent.sol";
-import "./interfaces/IRewardLiquidityPoolStruct.sol";
-import "./interfaces/IRewardLiquidityPool.sol";
+import "./interfaces/IMiningPoolManagerStruct.sol";
+import "./interfaces/IMiningPoolManagerEvent.sol";
+import "./interfaces/IMiningPoolStruct.sol";
+import "./interfaces/IMiningPool.sol";
 import "../../libraries/TickIndex.sol";
 
 /// @notice Concentrated Liquidity Pool periphery contract that combines non-fungible position management
-contract RewardLiquidityPoolManager is
-    IRewardLiquidityPoolManagerStruct,
-    IRewardLiquidityPoolManagerEvent,
+contract MiningPoolManager is
+    IMiningPoolManagerStruct,
+    IMiningPoolManagerEvent,
     IPositionManager,
     PangeaERC721,
     PangeaBatchable,
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
-    using TickIndex for IRewardLiquidityPool;
+    using TickIndex for IMiningPool;
 
     address internal cachedMsgSender = address(1);
     address internal cachedPool = address(1);
@@ -109,8 +109,7 @@ contract RewardLiquidityPoolManager is
         uint256 positionId
     ) external nonReentrant validPool(pool) returns (uint256 _positionId) {
         _cacheForCallback(pool, amount0Desired, amount1Desired, false);
-        return
-            _mint(IRewardLiquidityPool(pool), lowerOld, lower, upperOld, upper, amount0Desired, amount1Desired, minLiquidity, positionId);
+        return _mint(IMiningPool(pool), lowerOld, lower, upperOld, upper, amount0Desired, amount1Desired, minLiquidity, positionId);
     }
 
     /// @notice Create or add additional Liquidity to a given position of ERC20-NATIVE pair pool
@@ -132,7 +131,7 @@ contract RewardLiquidityPoolManager is
         uint256 minLiquidity,
         uint256 positionId
     ) external payable nonReentrant validPool(pool) returns (uint256 _positionId) {
-        IRewardLiquidityPool _pool = IRewardLiquidityPool(pool);
+        IMiningPool _pool = IMiningPool(pool);
         if (_pool.token0() == wETH) {
             _cacheForCallback(pool, msg.value, amountDesired, true);
 
@@ -191,7 +190,7 @@ contract RewardLiquidityPoolManager is
     }
 
     function _mint(
-        IRewardLiquidityPool pool,
+        IMiningPool pool,
         int24 lowerOld,
         int24 lower,
         int24 upperOld,
@@ -256,7 +255,7 @@ contract RewardLiquidityPoolManager is
             (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
                 TickMath.getSqrtRatioAtTick(position.lower),
                 TickMath.getSqrtRatioAtTick(position.upper),
-                IRewardLiquidityPool(position.pool).price(),
+                IMiningPool(position.pool).price(),
                 liquidityMinted,
                 true
             );
@@ -286,11 +285,11 @@ contract RewardLiquidityPoolManager is
         _settleReward(positionId);
 
         if (amount < position.liquidity) {
-            (token0Amount, token1Amount) = IRewardLiquidityPool(position.pool).burn(position.lower, position.upper, amount);
+            (token0Amount, token1Amount) = IMiningPool(position.pool).burn(position.lower, position.upper, amount);
             positions[positionId].liquidity -= amount;
         } else {
             amount = position.liquidity;
-            (token0Amount, token1Amount) = IRewardLiquidityPool(position.pool).burn(position.lower, position.upper, amount);
+            (token0Amount, token1Amount) = IMiningPool(position.pool).burn(position.lower, position.upper, amount);
             // if user burn all liquidity, collect fee first
             // slither-disable-next-line reentrancy-eth
             _collect(positionId, recipient, unwrap);
@@ -354,7 +353,7 @@ contract RewardLiquidityPoolManager is
         bool unwrap
     ) internal returns (uint256 token0amount, uint256 token1amount) {
         Position storage position = positions[positionId];
-        (token0amount, token1amount) = IRewardLiquidityPool(position.pool).collect(
+        (token0amount, token1amount) = IMiningPool(position.pool).collect(
             position.lower,
             position.upper,
             position.feeOwed0,
@@ -373,14 +372,10 @@ contract RewardLiquidityPoolManager is
         bool unwrap
     ) internal returns (uint256 rewardAmount) {
         Position storage position = positions[positionId];
-        rewardAmount = IRewardLiquidityPool(position.pool).collectReward(
-            position.lower,
-            position.upper,
-            positionRewards[positionId].rewardOwed
-        );
+        rewardAmount = IMiningPool(position.pool).collectReward(position.lower, position.upper, positionRewards[positionId].rewardOwed);
         positionRewards[positionId].rewardOwed = 0;
 
-        address rewardToken = IRewardLiquidityPool(position.pool).rewardToken();
+        address rewardToken = IMiningPool(position.pool).rewardToken();
         if (unwrap && rewardToken == wETH) {
             _transferOutETH(recipient, rewardAmount);
         } else {
@@ -402,7 +397,7 @@ contract RewardLiquidityPoolManager is
     {
         Position memory position = positions[positionId];
 
-        (feeGrowthInside0, feeGrowthInside1) = IRewardLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
+        (feeGrowthInside0, feeGrowthInside1) = IMiningPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
             token0amount =
@@ -418,7 +413,7 @@ contract RewardLiquidityPoolManager is
         Position memory position = positions[positionId];
         PositionReward memory positionReward = positionRewards[positionId];
 
-        rewardGrowthInside = IRewardLiquidityPool(position.pool).rangeRewardGrowth(position.lower, position.upper);
+        rewardGrowthInside = IMiningPool(position.pool).rangeRewardGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
             rewardAmount =
@@ -434,14 +429,14 @@ contract RewardLiquidityPoolManager is
         uint256 token1Amount,
         bool unwrap
     ) internal {
-        address token0 = IRewardLiquidityPool(pool).token0();
+        address token0 = IMiningPool(pool).token0();
         if (token0 == wETH && unwrap) {
             _transferOutETH(to, token0Amount);
         } else {
             _transferToken(token0, to, token0Amount);
         }
 
-        address token1 = IRewardLiquidityPool(pool).token1();
+        address token1 = IMiningPool(pool).token1();
         if (token1 == wETH && unwrap) {
             _transferOutETH(to, token1Amount);
         } else {

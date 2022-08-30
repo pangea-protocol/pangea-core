@@ -2,18 +2,18 @@
 
 Custom pools are pools with extension features added to the functionality of the Pangea pool.
 
+1. [miningPool](/miningPool)
 
+Rewards are often given when the protocol try to increase the liquidity volume of the target pool. The Pangeaswap pool
+supports airdrops, but there is a limitation that airdrops are only possible with the tokens that make up the pool.
 
-1. [rewardPool](/rewardPool)
-
-Rewards are often given when the protocol try to increase the liquidity volume of the target pool. The Pangeaswap pool supports airdrops, 
-but there is a limitation that airdrops are only possible with the tokens that make up the pool.
-
-RewardPool is a custom pool that allows tokens other than airdrop tokens to be used as rewards. 
+MiningPool is a custom pool that allows tokens other than airdrop tokens to be used as rewards.
 
 ````solidity
 /// @notice Reward Liquidity Pool interface.
-interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool  {
+interface IMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
+    ///
+    function initialize(bytes memory _deployData, address _masterDeployer) external;
 
     /// @notice reward Token
     function rewardToken() external view returns (address);

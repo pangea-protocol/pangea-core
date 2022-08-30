@@ -18,10 +18,10 @@ import "../../interfaces/IPoolFactoryCallee.sol";
 import "../../interfaces/IConcentratedLiquidityPoolFactory.sol";
 import "./vendor/EIP173Proxy.sol";
 import "./interfaces/IEIP173Proxy.sol";
-import "./interfaces/IRewardLiquidityPool.sol";
+import "./interfaces/IMiningPool.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
-contract RewardLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
+contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
     address public masterDeployer;
     address public poolLogger;
     address public manager;
@@ -79,7 +79,7 @@ contract RewardLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLiquidit
         if (!availableConfigs[salt]) revert InvalidConfig();
 
         pool = address(new EIP173Proxy{salt: salt}(poolImplementation, address(this), ""));
-        IRewardLiquidityPool(pool).initialize(_deployData, masterDeployer);
+        IMiningPool(pool).initialize(_deployData, masterDeployer);
 
         configAddress[salt] = pool;
         pools[tokenA][tokenB].push(pool);

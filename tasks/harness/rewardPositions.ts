@@ -1,5 +1,5 @@
 import {TokenContracts, Tokens} from "./tokens";
-import {IERC20Metadata, IRewardLiquidityPool, RewardLiquidityPoolManager} from "../../types";
+import {IERC20Metadata, MiningPool, MiningPoolManager} from "../../types";
 import {BigNumber, BigNumberish} from "ethers";
 import {PoolContracts, Pools} from "./pools";
 import {TickMath} from "@uniswap/v3-sdk";
@@ -26,7 +26,7 @@ class RewardPositionContracts {
   public users!: Signers;
   public pools!: PoolContracts;
   public tokens!: TokenContracts;
-  public poolManager!: RewardLiquidityPoolManager;
+  public poolManager!: MiningPoolManager;
 
   public static get Instance() {
     return this._instance || (this._instance = new this());
@@ -37,15 +37,15 @@ class RewardPositionContracts {
     this.users = await Users();
     this.pools = await Pools();
     this.tokens = await Tokens();
-    this.poolManager = await ethers.getContract("RewardLiquidityPoolManager") as RewardLiquidityPoolManager;
+    this.poolManager = await ethers.getContract("RewardLiquidityPoolManager") as MiningPoolManager;
     return this;
   }
 
-  public async info(positionId:BigNumberish) {
+  public async info(positionId: BigNumberish) {
     const {ethers} = require("hardhat");
     const position = await this.position(positionId)
     const poolInfo = await this.pools.info(position.pool)
-    const rewardToken = await (await ethers.getContractAt("RewardLiquidityPool", position.pool) as IRewardLiquidityPool).rewardToken();
+    const rewardToken = await (await ethers.getContractAt("MiningPool", position.pool) as MiningPool).rewardToken();
 
     const lower = convertToRatio(BigNumber.from(TickMath.getSqrtRatioAtTick(position.lower).toString()), poolInfo.token0.decimals, poolInfo.token1.decimals)
     const upper = convertToRatio(BigNumber.from(TickMath.getSqrtRatioAtTick(position.upper).toString()), poolInfo.token0.decimals, poolInfo.token1.decimals)
@@ -61,7 +61,7 @@ class RewardPositionContracts {
       pool: poolInfo.address,
       token0: poolInfo.token0.symbol,
       token1: poolInfo.token1.symbol,
-      rewardToken: await (await ethers.getContractAt("IERC20Metadata",rewardToken) as IERC20Metadata).symbol(),
+      rewardToken: await (await ethers.getContractAt("IERC20Metadata", rewardToken) as IERC20Metadata).symbol(),
       owner,
       lower,
       upper,
@@ -113,10 +113,10 @@ class RewardPositionContracts {
     return Promise.all(result)
   }
 
-  public async allOf(address:string) {
-    const result:Promise<BigNumber>[] = []
+  public async allOf(address: string) {
+    const result: Promise<BigNumber>[] = []
     let total = await this.poolManager.balanceOf(address)
-    for (let i=0;i<total.toNumber();i++) {
+    for (let i = 0; i < total.toNumber(); i++) {
       result.push(this.poolManager.tokenOfOwnerByIndex(address, i))
     }
     return Promise.all(result)

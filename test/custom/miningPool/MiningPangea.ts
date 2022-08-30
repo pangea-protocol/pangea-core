@@ -6,11 +6,11 @@ import {
   AirdropDistributor,
   ERC20Mock,
   MasterDeployer,
+  MiningPool,
+  MiningPoolFactory,
+  MiningPoolManager,
   PoolLogger,
   PoolRouter,
-  RewardLiquidityPool,
-  RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
   SwapHelper,
   TickMathMock,
   WETH10,
@@ -19,8 +19,8 @@ import { getFactories } from "../../harness/helpers";
 
 export const TWO_POW_96 = BigNumber.from(2).pow(96);
 
-export class RewardPangea {
-  private static _instance: RewardPangea;
+export class MiningPangea {
+  private static _instance: MiningPangea;
 
   public accounts!: SignerWithAddress[];
   public tokens!: ERC20Mock[];
@@ -29,8 +29,8 @@ export class RewardPangea {
   public masterDeployer!: MasterDeployer;
   public poolLogger!: PoolLogger;
   public router!: PoolRouter;
-  public poolManager!: RewardLiquidityPoolManager;
-  public poolFactory!: RewardLiquidityPoolFactory;
+  public poolManager!: MiningPoolManager;
+  public poolFactory!: MiningPoolFactory;
   public tickMath!: TickMathMock;
   public swapHelper!: SwapHelper;
   public airdropDistributor!: AirdropDistributor;
@@ -67,18 +67,15 @@ export class RewardPangea {
     const tickIndexLibrary = await TickIndex.deploy();
     const clpLibs = {};
     clpLibs["RewardTicks"] = tickLibrary.address;
-    const RewardLiquidityPool = await ethers.getContractFactory(
-      "RewardLiquidityPool",
-      {
-        libraries: clpLibs,
-      }
-    );
+    const MiningPool = await ethers.getContractFactory("MiningPool", {
+      libraries: clpLibs,
+    });
 
-    const RewardLiquidityPoolFactory = await ethers.getContractFactory(
-      "RewardLiquidityPoolFactory"
+    const MiningPoolFactory = await ethers.getContractFactory(
+      "MiningPoolFactory"
     );
-    const RewardLiquidityPoolManager = await ethers.getContractFactory(
-      "RewardLiquidityPoolManager",
+    const MiningPoolManager = await ethers.getContractFactory(
+      "MiningPoolManager",
       {
         libraries: { TickIndex: tickIndexLibrary.address },
       }
@@ -89,10 +86,10 @@ export class RewardPangea {
     await this.deployPangeaPeriphery(Deployer, PoolRouter);
     await this.deployAirdropDistributor(AirdropDistributor);
     await this.deployConcentratedPeriphery(
-      RewardLiquidityPool,
+      MiningPool,
       Logger,
-      RewardLiquidityPoolManager,
-      RewardLiquidityPoolFactory,
+      MiningPoolManager,
+      MiningPoolFactory,
       TickMath
     );
     await this.addFactoriesToWhitelist();
@@ -134,23 +131,21 @@ export class RewardPangea {
   }
 
   private async deployConcentratedPeriphery(
-    RewardLiquidityPool: ContractFactory,
+    MiningPool: ContractFactory,
     Logger: ContractFactory,
     poolManager: ContractFactory,
-    ConcentratedPoolFactory: ContractFactory,
+    PoolFactory: ContractFactory,
     TickMath: ContractFactory
   ) {
-    this.poolManager =
-      (await poolManager.deploy()) as RewardLiquidityPoolManager;
+    this.poolManager = (await poolManager.deploy()) as MiningPoolManager;
     await this.poolManager.initialize(
       this.masterDeployer.address,
       this.weth.address
     );
-    this.poolFactory =
-      (await ConcentratedPoolFactory.deploy()) as RewardLiquidityPoolFactory;
+    this.poolFactory = (await PoolFactory.deploy()) as MiningPoolFactory;
     this.poolLogger = (await Logger.deploy()) as PoolLogger;
     await this.poolLogger.initialize(this.masterDeployer.address);
-    const pool = (await RewardLiquidityPool.deploy()) as RewardLiquidityPool;
+    const pool = (await MiningPool.deploy()) as MiningPool;
     await this.poolFactory.initialize(
       pool.address,
       this.masterDeployer.address,

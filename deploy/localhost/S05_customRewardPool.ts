@@ -1,20 +1,20 @@
-import { DeployFunction } from "hardhat-deploy/types";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import {DeployFunction} from "hardhat-deploy/types";
+import {HardhatRuntimeEnvironment} from "hardhat/types";
 import {
   AirdropDistributor,
   ConcentratedLiquidityPoolHelper,
   ERC20Test,
   KDAI,
-  KETH, KORC,
+  KORC,
   MasterDeployer,
+  MiningPool,
+  MiningPoolManager,
   PoolLogger,
-  RewardLiquidityPool,
   RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
-  TickIndex, WEMIX,
+  TickIndex,
   WETH10,
 } from "../../types";
-import {doTransaction, isLocalTestNetwork, saltValue, waitConfirmations} from "../utils";
+import {doTransaction, isLocalTestNetwork, waitConfirmations} from "../utils";
 import {BigNumber, BigNumberish, utils} from "ethers";
 import {encodeSqrtRatioX96, TickMath} from "@uniswap/v3-sdk";
 import {parseUnits} from "ethers/lib/utils";
@@ -28,26 +28,26 @@ const deployFunction: DeployFunction = async function (
       deployments,
       network
     }: HardhatRuntimeEnvironment) {
-  if (! await isLocalTestNetwork()) return;
+  if (!await isLocalTestNetwork()) return;
   console.log("DEPLOY FOR CUSTOM POOL : REWARD LIQUIDITY POOL")
   await network.provider.send("evm_setAutomine", [false]);
   await network.provider.send("evm_setIntervalMining", [1]);
 
-  const { deploy, deterministic } = deployments;
-  const { deployer, dev } = await ethers.getNamedSigners();
+  const {deploy, deterministic} = deployments;
+  const {deployer, dev} = await ethers.getNamedSigners();
 
   const {address: RewardTicks} = await deploy("RewardTicks", {
     from: deployer.address,
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
-    log:true
+    log: true
   });
 
   const {address: RewardLiquidityPoolFactoryLib} = await deploy("RewardLiquidityPoolFactoryLib", {
     from: deployer.address,
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
-    log:true,
+    log: true,
     libraries: {RewardTicks}
   });
 
@@ -69,7 +69,7 @@ const deployFunction: DeployFunction = async function (
     libraries: {
       RewardLiquidityPoolFactoryLib
     },
-    log:true,
+    log: true,
     waitConfirmations: await waitConfirmations(),
   });
 
@@ -90,8 +90,8 @@ const deployFunction: DeployFunction = async function (
         }
       }
     },
-    libraries: { TickIndex:tickIndex.address },
-    log:true,
+    libraries: {TickIndex: tickIndex.address},
+    log: true,
     waitConfirmations: await waitConfirmations(),
   });
 
@@ -102,11 +102,11 @@ const deployFunction: DeployFunction = async function (
   const WKLAY = await ethers.getContract<WETH10>("WETH10")
   const KORC = await ethers.getContract<KORC>("KORC")
 
- /*
-  * | pool No | tokenA | tokenB | REWARD | fee   | amountXDesired | amountYDesired |
-  * | 1001    | KDAI   | KORC   | WKLAY  | 0.20% | 200,000        | 200,000        |
-  * | 1002    | WKLAY  | KORC   | KDAI   | 0.20% | 200,000        | 216,600        |
-  */
+  /*
+   * | pool No | tokenA | tokenB | REWARD | fee   | amountXDesired | amountYDesired |
+   * | 1001    | KDAI   | KORC   | WKLAY  | 0.20% | 200,000        | 200,000        |
+   * | 1002    | WKLAY  | KORC   | KDAI   | 0.20% | 200,000        | 216,600        |
+   */
   if ((await factory.poolsCount(KDAI.address, KORC.address)).eq(0)) {
     const data = createDeployData(
         KDAI.address, KORC.address, WKLAY.address, 2000, parseUnits("200000", await KDAI.decimals()), parseUnits("10400000", await KORC.decimals())
@@ -116,7 +116,7 @@ const deployFunction: DeployFunction = async function (
 
   console.log("CREATE REWARD LIQUIDITY POOL")
   const poolHelper = await ethers.getContract<ConcentratedLiquidityPoolHelper>("ConcentratedLiquidityPoolHelper")
-  const poolManager = await ethers.getContract<RewardLiquidityPoolManager>("RewardLiquidityPoolManager")
+  const poolManager = await ethers.getContract<MiningPoolManager>("RewardLiquidityPoolManager")
 
   if ((await factory.poolsCount(WKLAY.address, KORC.address)).eq(0)) {
     const data = createDeployData(
@@ -133,21 +133,21 @@ const deployFunction: DeployFunction = async function (
     return lst[lst.length - 1]
   }
 
-  const mintAndApprove = async (user:SignerWithAddress, tokenAddress:string, amount:BigNumberish) => {
+  const mintAndApprove = async (user: SignerWithAddress, tokenAddress: string, amount: BigNumberish) => {
     if (tokenAddress == WKLAY.address) {
       amount = ethers.utils.parseEther(amount.toString())
-      await doTransaction(WKLAY.connect(user).deposit({value:amount}))
+      await doTransaction(WKLAY.connect(user).deposit({value: amount}))
       await doTransaction(WKLAY.connect(user).approve(poolManager.address, amount))
     } else {
-      const token = await ethers.getContractAt('ERC20Test',tokenAddress) as ERC20Test
-      amount = ethers.utils.parseUnits(amount.toString(),await token.decimals())
+      const token = await ethers.getContractAt('ERC20Test', tokenAddress) as ERC20Test
+      amount = ethers.utils.parseUnits(amount.toString(), await token.decimals())
       await doTransaction(token.connect(user).mint(user.address, amount))
       await doTransaction(token.connect(user).approve(poolManager.address, amount))
     }
   }
 
-  const addLiquidity = async (user:SignerWithAddress, poolAddress:string, amount0:BigNumberish, amount1:BigNumberish, lower:number, upper:number) => {
-    const pool = await ethers.getContractAt<RewardLiquidityPool>('RewardLiquidityPool', poolAddress);
+  const addLiquidity = async (user: SignerWithAddress, poolAddress: string, amount0: BigNumberish, amount1: BigNumberish, lower: number, upper: number) => {
+    const pool = await ethers.getContractAt<MiningPool>('RewardLiquidityPool', poolAddress);
     const assets = await pool.getAssets()
     const tickSpacing = (await pool.getImmutables())._tickSpacing;
 
@@ -194,17 +194,17 @@ const deployFunction: DeployFunction = async function (
   } = await ethers.getNamedSigners();
 
   const priceRanges = [
-    {user:user100, lower:5000,  upper:20000},
-    {user:user101, lower:2000,  upper:40000},
-    {user:user103, lower:9000,  upper:11000},
-    {user:user104, lower:5000,  upper:10000},
-    {user:user106, lower:10000, upper:20000},
-    {user:user107, lower:5000,  upper:20000},
+    {user: user100, lower: 5000, upper: 20000},
+    {user: user101, lower: 2000, upper: 40000},
+    {user: user103, lower: 9000, upper: 11000},
+    {user: user104, lower: 5000, upper: 10000},
+    {user: user106, lower: 10000, upper: 20000},
+    {user: user107, lower: 5000, upper: 20000},
   ]
 
   const tokenPairs = [
-    {token0:KDAI.address, token1:KORC.address, amount0: 100000, amount1: 100000},
-    {token0:WKLAY.address, token1:KORC.address, amount0:200000, amount1: 216600},
+    {token0: KDAI.address, token1: KORC.address, amount0: 100000, amount1: 100000},
+    {token0: WKLAY.address, token1: KORC.address, amount0: 200000, amount1: 216600},
   ]
 
   for (const pair of tokenPairs) {
@@ -226,18 +226,18 @@ const deployFunction: DeployFunction = async function (
   console.log("REWARD DEPOSIT TO REWARD LIQUIDITY POOL")
   const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributor")
 
-  const mintAndAirdrop = async (poolAddress:string, amount:BigNumberish) => {
-    const pool = await ethers.getContractAt("RewardLiquidityPool", poolAddress) as RewardLiquidityPool;
+  const mintAndAirdrop = async (poolAddress: string, amount: BigNumberish) => {
+    const pool = await ethers.getContractAt("RewardLiquidityPool", poolAddress) as MiningPool;
     const tokenAddress = (await pool.rewardToken())
     if (tokenAddress == WKLAY.address) {
       amount = ethers.utils.parseEther(amount.toString())
 
-      await WKLAY.connect(deployer).deposit({value:amount});
+      await WKLAY.connect(deployer).deposit({value: amount});
       await WKLAY.connect(deployer).approve(pool.address, amount);
       await doTransaction(pool.connect(deployer).depositReward(amount));
     } else {
-      const token = await ethers.getContractAt('ERC20Test',tokenAddress) as ERC20Test
-      amount = ethers.utils.parseUnits(amount.toString(),await token.decimals())
+      const token = await ethers.getContractAt('ERC20Test', tokenAddress) as ERC20Test
+      amount = ethers.utils.parseUnits(amount.toString(), await token.decimals())
 
       await doTransaction(token.connect(deployer).mint(deployer.address, amount))
       await doTransaction(token.connect(deployer).approve(poolAddress, amount))
@@ -269,18 +269,18 @@ const deployFunction: DeployFunction = async function (
   await network.provider.send("evm_setIntervalMining", [1000]);
 };
 
-function priceRatioX96(amount1: BigNumber, amount0:BigNumber): BigNumber {
+function priceRatioX96(amount1: BigNumber, amount0: BigNumber): BigNumber {
   return BigNumber.from(encodeSqrtRatioX96(amount1.toString(), amount0.toString()).toString())
 }
 
-function encodeData(token0:string, token1:string, rewardToken:string, fee:BigNumberish, price:BigNumberish, tickSpacing:BigNumberish) {
+function encodeData(token0: string, token1: string, rewardToken: string, fee: BigNumberish, price: BigNumberish, tickSpacing: BigNumberish) {
   return utils.defaultAbiCoder.encode(
-      ["address", "address", "address","uint24", "uint160", "uint24"],
+      ["address", "address", "address", "uint24", "uint160", "uint24"],
       [token0, token1, rewardToken, fee, price, tickSpacing]
   );
 }
 
-function createDeployData(token0:string, token1:string, rewardToken:string, fee:number, token0Amount:BigNumber, token1Amount:BigNumber) {
+function createDeployData(token0: string, token1: string, rewardToken: string, fee: number, token0Amount: BigNumber, token1Amount: BigNumber) {
   if (token0.toLowerCase() > token1.toLowerCase()) {
     [token0, token1] = [token1, token0];
     [token0Amount, token1Amount] = [token1Amount, token0Amount];
@@ -294,23 +294,23 @@ export function getTickSpacing(feeAmount: number) {
   return Math.round(feeAmount / feeUnit);
 }
 
-function getTickAtSqrtRatio(priceSqrtRatio:BigNumber) {
+function getTickAtSqrtRatio(priceSqrtRatio: BigNumber) {
   return TickMath.getTickAtSqrtRatio(JSBI.BigInt(priceSqrtRatio));
 }
 
-function getNearestUpperValidTick(priceSqrtRatio:BigNumber, tickSpacing: number) {
+function getNearestUpperValidTick(priceSqrtRatio: BigNumber, tickSpacing: number) {
   const tickAtPrice = getTickAtSqrtRatio(priceSqrtRatio);
   const rounded = Math.round(tickAtPrice / tickSpacing) * tickSpacing;
   return (rounded / tickSpacing) % 2 == 0 ? rounded + tickSpacing : rounded;
 }
 
-function getNearestLowerValidTick(priceSqrtRatio:BigNumber, tickSpacing: number) {
+function getNearestLowerValidTick(priceSqrtRatio: BigNumber, tickSpacing: number) {
   const tickAtPrice = getTickAtSqrtRatio(priceSqrtRatio);
   const rounded = Math.round(tickAtPrice / tickSpacing) * tickSpacing;
   return (rounded / tickSpacing) % 2 == 0 ? rounded : rounded - tickSpacing;
 }
 
-function searchOld(tick:number, ticks:number[]) {
+function searchOld(tick: number, ticks: number[]) {
   if (ticks.length == 2) return ticks[0]
 
   for (const curr of ticks.reverse()) {

@@ -2,11 +2,11 @@
 
 pragma solidity >=0.8.0;
 
-import "./IRewardLiquidityPoolStruct.sol";
+import "./IMiningPoolStruct.sol";
 import "../../../interfaces/IConcentratedLiquidityPool.sol";
 
-/// @notice Reward Liquidity Pool interface.
-interface IRewardLiquidityPool is IRewardLiquidityPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
+/// @notice Mining Pool interface.
+interface IMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
     ///
     function initialize(bytes memory _deployData, address _masterDeployer) external;
 

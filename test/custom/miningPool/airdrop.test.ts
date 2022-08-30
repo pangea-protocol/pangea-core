@@ -2,16 +2,16 @@ import { ethers, network } from "hardhat";
 import {
   ERC20Test,
   MasterDeployer,
+  MiningPool,
+  MiningPoolFactory,
+  MiningPoolManager,
   PoolRouter,
-  RewardLiquidityPool,
-  RewardLiquidityPoolFactory,
-  RewardLiquidityPoolManager,
 } from "../../../types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
 import { expect } from "chai";
-import { RewardPangea } from "./RewardPangea";
+import { MiningPangea } from "./MiningPangea";
 
 describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
@@ -29,11 +29,11 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
   let trader: SignerWithAddress;
   let airdrop: SignerWithAddress;
 
-  let pangea: RewardPangea;
+  let pangea: MiningPangea;
   let masterDeployer: MasterDeployer;
-  let poolFactory: RewardLiquidityPoolFactory;
-  let poolManager: RewardLiquidityPoolManager;
-  let pool: RewardLiquidityPool;
+  let poolFactory: MiningPoolFactory;
+  let poolManager: MiningPoolManager;
+  let pool: MiningPool;
   let router: PoolRouter;
   let token0: ERC20Test;
   let token1: ERC20Test;
@@ -46,7 +46,7 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
     [deployer, liquidityProvider, trader, airdrop] = await ethers.getSigners();
 
     // ======== CONTRACT ==========
-    pangea = await RewardPangea.Instance.init();
+    pangea = await MiningPangea.Instance.init();
     masterDeployer = pangea.masterDeployer;
     poolFactory = pangea.poolFactory;
     poolManager = pangea.poolManager;
@@ -87,10 +87,7 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
-    pool = await ethers.getContractAt<RewardLiquidityPool>(
-      "RewardLiquidityPool",
-      poolAddress
-    );
+    pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
 
     await token0.mint(airdrop.address, ethers.constants.MaxUint256.div(10));
     await token0
