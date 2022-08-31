@@ -82,7 +82,7 @@ interface IConcentratedLiquidityPool is IConcentratedLiquidityPoolStruct {
     /// @notice list of the tokens of the pool, sorted by address
     function getAssets() external view returns (address[] memory tokens);
 
-    /// @notice Number of ticks on Pool, starts with two ticks (MIN_TICK & MAX_TICK)
+    /// @notice do not use this. it can be easily corrupted
     function totalTicks() external view returns (uint256);
 
     /// @notice The currently in range liquidity available to the poo

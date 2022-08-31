@@ -1,7 +1,8 @@
 import {DeployFunction} from "hardhat-deploy/types";
 import {HardhatRuntimeEnvironment} from "hardhat/types";
 import {doTransaction, waitConfirmations} from "./utils";
-import {TickIndex} from "../types";
+import {MiningPoolManager, PositionDescription, TickIndex} from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
                                                          deployments,
@@ -18,7 +19,8 @@ const deployFunction: DeployFunction = async function ({
     from: deployer,
     deterministicDeployment: false,
     waitConfirmations: await waitConfirmations(),
-    log: true
+    log: true,
+    gasPrice: BigNumber.from("250000000000")
   });
 
   const {address: poolImplementation} = await deploy("MiningPool", {
@@ -26,7 +28,10 @@ const deployFunction: DeployFunction = async function ({
     libraries: {RewardTicks},
     log: true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: BigNumber.from("250000000000")
   });
+
+
 
   const deployResult = await deploy("MiningPoolFactory", {
     from: deployer,
@@ -42,6 +47,7 @@ const deployFunction: DeployFunction = async function ({
     },
     log: true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: BigNumber.from("250000000000")
   });
 
   if (!(await masterDeployer.whitelistedFactories(deployResult.address))) {
@@ -65,7 +71,12 @@ const deployFunction: DeployFunction = async function ({
     libraries: {TickIndex: tickIndex.address},
     log: true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: BigNumber.from("250000000000")
   })
+
+  const miningPoolManager = await ethers.getContract("MiningPoolManager") as MiningPoolManager;
+  const posDesc = await ethers.getContract("PositionDescription") as PositionDescription;
+  await doTransaction(miningPoolManager.setDescriptor(posDesc.address, {gasPrice: BigNumber.from("250000000000") }));
 };
 
 export default deployFunction;
