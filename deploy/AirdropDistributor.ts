@@ -29,7 +29,9 @@ const deployFunction: DeployFunction = async function ({
     waitConfirmations: await waitConfirmations(),
   });
 
-  await doTransaction(masterDeployer.setAirdropDistributor(deployResult.address));
+  if (await masterDeployer.airdropDistributor() != deployResult.address) {
+    await doTransaction(masterDeployer.setAirdropDistributor(deployResult.address));
+  }
 };
 
 export default deployFunction;

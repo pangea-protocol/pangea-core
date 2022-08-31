@@ -22,6 +22,7 @@ import "../interfaces/IWETH.sol";
 import "../interfaces/LPAirdropCallee.sol";
 import "../libraries/SafeCast.sol";
 import "../interfaces/IAirdropDistributor.sol";
+import "../interfaces/IAirdropPool.sol";
 
 // @notice Airdrop Token distribution Contract for Liquidity Provider
 contract AirdropDistributor is IAirdropDistributor, Initializable {
@@ -107,6 +108,20 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
         if (airdropStartTimePerPool[pool] > epochStartTime()) revert NotYet();
 
         _airdrop(pool);
+    }
+
+    /// @notice airdrop Batch Call
+    /// @param pools list of the addresses of pangea pool
+    function airdropList(address[] memory pools) external {
+        uint256 _epochStartTime = epochStartTime();
+        for (uint256 i = 0; i < pools.length; i++) {
+            address pool = pools[i];
+
+            if (airdropStartTimePerPool[pool] > _epochStartTime) continue;
+            if ((IAirdropPool(pool).airdropStartTime() + IAirdropPool(pool).airdropPeriod()) > _epochStartTime) continue;
+
+            _airdrop(pool);
+        }
     }
 
     /// @notice airdrop the deposited assets all on this epoch

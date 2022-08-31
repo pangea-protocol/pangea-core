@@ -132,6 +132,8 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     error NotAuthorized();
     error AlreadyPriceInitialized();
 
+    event DistributeReward(address token, uint256 amount, uint256 startTime, uint256 period);
+
     modifier lock() {
         if (unlocked == 2) revert Locked();
         unlocked = 2;
@@ -614,6 +616,8 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
 
         uint128 reward = depositedReward;
         depositedReward = 0;
+
+        if (reward > 0) emit DistributeReward(rewardToken, reward, startTime, period);
 
         // not allowed before the previous airdrop is ended
         uint256 _airdropStartTime = airdropStartTime;
