@@ -13,7 +13,6 @@ import "./SVGGenerator.sol";
 
 /// @notice generate tokenURI for given Position NFT
 contract PositionDescription is INFTDescriptor, Initializable {
-
     using Strings for uint256;
 
     IConcentratedLiquidityPoolManager public positionManager;
