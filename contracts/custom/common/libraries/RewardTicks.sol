@@ -14,7 +14,6 @@
 pragma solidity >=0.8.0;
 
 import "../../../libraries/TickMath.sol";
-import "../interfaces/IMiningPoolStruct.sol";
 import "../../../interfaces/IConcentratedLiquidityPool.sol";
 
 /// @notice Tick management library for ranged & Reward liquidity.

@@ -21,7 +21,7 @@ import "../common/interfaces/IEIP173Proxy.sol";
 import "../common/interfaces/ICustomPool.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
-contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
+contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
     address public masterDeployer;
     address public poolLogger;
     address public manager;
