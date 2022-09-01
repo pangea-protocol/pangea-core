@@ -8,7 +8,6 @@ import "../../common/interfaces/ICustomPool.sol";
 
 /// @notice Mining Pool interface.
 interface IMiningPool is ICustomPool, IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
-
     /// @notice reward Token
     function rewardToken() external view returns (address);
 

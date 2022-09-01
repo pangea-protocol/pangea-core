@@ -177,6 +177,24 @@ const config: HardhatUserConfig = {
           },
         }
       },
+      "contracts/custom/miningPool/test/MockMiningPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        }
+      },
+      "contracts/custom/yieldPool/YieldPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        }
+      },
     }
   },
   dodoc: {
