@@ -26,6 +26,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
     address public poolLogger;
     address public manager;
     address private poolImplementation;
+    address public yieldToken;
 
     mapping(address => mapping(address => address[])) public pools;
     mapping(bytes32 => address) public configAddress;
@@ -51,7 +52,8 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
     function initialize(
         address _implementation,
         address _masterDeployer,
-        address _poolLogger
+        address _poolLogger,
+        address _yieldToken
     ) external initializer {
         if (_implementation == address(0)) revert ZeroAddress();
         if (_masterDeployer == address(0)) revert ZeroAddress();
@@ -59,6 +61,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
         poolImplementation = _implementation;
         masterDeployer = _masterDeployer;
         poolLogger = _poolLogger;
+        yieldToken = _yieldToken;
 
         __Ownable_init();
         manager = _msgSender();
@@ -74,7 +77,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
 
         // Strips any extra data.
         // Don't include price in _deployData to enable predictable address calculation.
-        _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
+        _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing, tokenA == yieldToken);
         bytes32 salt = keccak256(_deployData);
         if (!availableConfigs[salt]) revert InvalidConfig();
 
@@ -123,6 +126,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
         uint24 tickSpacing
     ) external onlyManager {
         if (tokenA >= tokenB) revert WrongTokenOrder();
+        if (tokenA != yieldToken && tokenB != yieldToken) revert InvalidToken();
         if (tokenA == rewardToken || tokenB == rewardToken) revert InvalidToken();
 
         bytes memory _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
