@@ -256,7 +256,7 @@ contract ConcentratedLiquidityPoolManager is
         }
 
         {
-            Position memory position =  positions[_positionId];
+            Position memory position = positions[_positionId];
             (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
                 TickMath.getSqrtRatioAtTick(position.lower),
                 TickMath.getSqrtRatioAtTick(position.upper),
@@ -364,8 +364,12 @@ contract ConcentratedLiquidityPoolManager is
         (feeGrowthInside0, feeGrowthInside1) = IConcentratedLiquidityPool(position.pool).rangeFeeGrowth(position.lower, position.upper);
         unchecked {
             // @dev underflow is intended.
-            token0amount = FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) + position.feeOwed0;
-            token1amount = FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) + position.feeOwed1;
+            token0amount =
+                FullMath.mulDiv(feeGrowthInside0 - position.feeGrowthInside0, position.liquidity, FixedPoint.Q128) +
+                position.feeOwed0;
+            token1amount =
+                FullMath.mulDiv(feeGrowthInside1 - position.feeGrowthInside1, position.liquidity, FixedPoint.Q128) +
+                position.feeOwed1;
         }
     }
 

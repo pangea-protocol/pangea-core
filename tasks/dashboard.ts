@@ -4,6 +4,7 @@ import {BigNumber} from "ethers";
 import Table from "cli-table3";
 import {Tokens} from "./harness/tokens";
 import {Positions} from "./harness/positions";
+import {RewardPositions} from "./harness/rewardPositions";
 
 task("dashboard:tokens", "Prints the list of tokens on TestPools")
     .setAction(async () => {
@@ -30,6 +31,7 @@ task("dashboard:pools", "Prints the list of pools")
         e.address,
         e.token0.symbol,
         e.token1.symbol,
+        e.factory,
         e.swapFee/1000000,
         e.tickSpacing,
         e.price,
@@ -39,7 +41,7 @@ task("dashboard:pools", "Prints the list of pools")
       ]);
 
       const table = new Table({
-        head: ["pool Address", "token0", "token1", "swapFee", "tickSpacing", "priceRatio", 'reserve0', 'reserve1', 'totalValueLock ($)']
+        head: ["pool Address", "token0", "token1", "factory", "swapFee", "tickSpacing", "priceRatio", 'reserve0', 'reserve1', 'totalValueLock ($)']
       });
 
       table.push(...rows);
@@ -50,6 +52,16 @@ task("dashboard:pools", "Prints the list of pools")
 task("dashboard:positions", "Prints the list of positions")
     .setAction(async () => {
       const positions = await Positions();
+      const allPositions = await positions.all();
+
+      const table = await positions.positionTable(allPositions);
+      console.log(table.toString());
+    });
+
+
+task("dashboard:rewardPositions", "Prints the list of positions")
+    .setAction(async () => {
+      const positions = await RewardPositions();
       const allPositions = await positions.all();
 
       const table = await positions.positionTable(allPositions);

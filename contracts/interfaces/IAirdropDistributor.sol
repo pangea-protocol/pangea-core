@@ -74,4 +74,8 @@ interface IAirdropDistributor is IAirdropDistributorEvent, IAirdropDistributorSt
     /// @notice airdrop the deposited assets of pool
     /// @param pool the address of pangea pool
     function airdrop(address pool) external;
+
+    /// @notice airdrop Batch Call
+    /// @param pools list of the addresses of pangea pool
+    function airdropList(address[] memory pools) external;
 }

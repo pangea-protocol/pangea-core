@@ -6,10 +6,11 @@ import {Users} from "./harness/signers";
 import {Positions} from "./harness/positions";
 import {sqrt} from "@uniswap/sdk-core";
 import JSBI from "jsbi";
-import {ConcentratedLiquidityPoolManager} from "../types";
+import {ConcentratedLiquidityPoolManager, IMiningPool, MiningPoolManager} from "../types";
 import {ethers} from "hardhat";
 import {BigNumber} from "@ethersproject/bignumber";
 import {TickMath} from "@uniswap/v3-sdk";
+import {RewardPositions} from "./harness/rewardPositions";
 
 task("position:mint", "mint a new position NFT")
     .addPositionalParam("owner", "address or name")
@@ -19,7 +20,7 @@ task("position:mint", "mint a new position NFT")
     .addPositionalParam("amount0Desired")
     .addPositionalParam("amount1Desired")
     .addPositionalParam("minLiquidity", "slippage", 0, types.int)
-    .addPositionalParam("positionId","",0,types.int)
+    .addPositionalParam("positionId", "", 0, types.int)
     .setAction(async (
         {owner, pool, lowerRate, upperRate, amount0Desired, amount1Desired, minLiquidity, positionId},
         {ethers}
@@ -76,7 +77,7 @@ task("position:mint", "mint a new position NFT")
               , {value: amount0Desired}))
         }
       } else {
-        await doExecute(token0.connect(user).approve(poolManager.address,amount0Desired));
+        await doExecute(token0.connect(user).approve(poolManager.address, amount0Desired));
         await doExecute(token1.connect(user).approve(poolManager.address, amount1Desired));
         await doExecute(poolManager.connect(user).mint(
             pool,
@@ -102,7 +103,7 @@ task("position:addLiquidity", "add liquidity to existing position")
     .addPositionalParam("amount0Desired")
     .addPositionalParam("amount1Desired")
     .addPositionalParam("minLiquidity", "slippage", 0, types.int)
-    .setAction(async ({owner, positionId, amount0Desired, amount1Desired, minLiquidity},{ethers}) => {
+    .setAction(async ({owner, positionId, amount0Desired, amount1Desired, minLiquidity}, {ethers}) => {
       await advanceBlock();
 
       const pools = await Pools();
@@ -173,7 +174,7 @@ task("position:burn", "remove liquidity from position")
     .addPositionalParam("amount")
     .addPositionalParam("recipient")
     .addPositionalParam("minimumOut0", "slippage for token0", "0", types.string)
-    .addPositionalParam("minimumOut1","slippage for token1", "0", types.string)
+    .addPositionalParam("minimumOut1", "slippage for token1", "0", types.string)
     .addPositionalParam("unwrap", "", false, types.boolean)
     .setAction(async (
         {owner, tokenId, amount, recipient, minimumOut0, minimumOut1, unwrap}
@@ -232,6 +233,32 @@ task("position:collect", "claim fee from position")
       console.log(balanceTable.toString())
     })
 
+task("position:collectReward", "claim reward from position")
+    .addPositionalParam("owner", "address or name")
+    .addPositionalParam("tokenId")
+    .addPositionalParam("recipient")
+    .addPositionalParam("unwrap", "", false, types.boolean)
+    .setAction(async (
+        {owner, tokenId, recipient, unwrap}, {ethers}
+    ) => {
+      const users = await Users();
+      const positions = await RewardPositions();
+      const positionInfo = await positions.info(tokenId);
+
+      const user = users.signerFrom(owner);
+
+      const poolManager = await ethers.getContract("RewardLiquidityPoolManager") as MiningPoolManager;
+      await doExecute(poolManager.connect(user).collectReward(
+          tokenId,
+          users.addressFrom(recipient),
+          unwrap
+      ));
+
+      const rewardToken = await (await ethers.getContractAt<IMiningPool>("IRewardLiquidityPool", positionInfo.pool)).rewardToken();
+      const balanceTable = await users.balanceTableWith(user.address, [rewardToken]);
+      console.log(balanceTable.toString())
+    })
+
 
 task("position:transfer", "transfer position NFT")
     .addPositionalParam("owner", "address or name")
@@ -257,17 +284,17 @@ task("position:transfer", "transfer position NFT")
     })
 
 
-function getTickAtSqrtRatio(priceSqrtRatio:BigNumber) {
+function getTickAtSqrtRatio(priceSqrtRatio: BigNumber) {
   return TickMath.getTickAtSqrtRatio(JSBI.BigInt(priceSqrtRatio));
 }
 
-function getNearestUpperValidTick(priceSqrtRatio:BigNumber, tickSpacing: number) {
+function getNearestUpperValidTick(priceSqrtRatio: BigNumber, tickSpacing: number) {
   const tickAtPrice = getTickAtSqrtRatio(priceSqrtRatio);
   const rounded = Math.round(tickAtPrice / tickSpacing) * tickSpacing;
   return (rounded / tickSpacing) % 2 == 0 ? rounded + tickSpacing : rounded;
 }
 
-function getNearestLowerValidTick(priceSqrtRatio:BigNumber, tickSpacing: number) {
+function getNearestLowerValidTick(priceSqrtRatio: BigNumber, tickSpacing: number) {
   const tickAtPrice = getTickAtSqrtRatio(priceSqrtRatio);
   const rounded = Math.round(tickAtPrice / tickSpacing) * tickSpacing;
   return (rounded / tickSpacing) % 2 == 0 ? rounded : rounded - tickSpacing;

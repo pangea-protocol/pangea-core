@@ -2,6 +2,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {waitConfirmations} from "./utils";
 import {AirdropDistributor, ConcentratedLiquidityPoolManager, MasterDeployer} from "../types";
+import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
                                                            ethers,
@@ -29,6 +30,7 @@ const deployFunction: DeployFunction = async function ({
         },
         log:true,
         waitConfirmations: await waitConfirmations(),
+        gasPrice: BigNumber.from("250000000000")
     });
 
   await deploy("PositionDashboard", {
@@ -45,6 +47,7 @@ const deployFunction: DeployFunction = async function ({
     },
     log:true,
     waitConfirmations: await waitConfirmations(),
+    gasPrice: BigNumber.from("250000000000")
   });
 };
 

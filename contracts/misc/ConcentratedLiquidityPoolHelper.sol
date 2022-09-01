@@ -22,7 +22,7 @@ contract ConcentratedLiquidityPoolHelper {
     }
 
     function getTickState(IConcentratedLiquidityPool pool) external view returns (SimpleTick[] memory) {
-        SimpleTick[] memory ticks = new SimpleTick[](pool.totalTicks());
+        SimpleTick[] memory ticks = new SimpleTick[](countTotalTicks(pool));
 
         IConcentratedLiquidityPool.Tick memory tick;
         uint24 i;
@@ -41,7 +41,7 @@ contract ConcentratedLiquidityPoolHelper {
     }
 
     function getTickStateDetail(IConcentratedLiquidityPool pool) external view returns (DetailTick[] memory) {
-        DetailTick[] memory ticks = new DetailTick[](pool.totalTicks());
+        DetailTick[] memory ticks = new DetailTick[](countTotalTicks(pool));
 
         IConcentratedLiquidityPool.Tick memory tick;
         uint24 i;
@@ -69,5 +69,16 @@ contract ConcentratedLiquidityPoolHelper {
         });
 
         return ticks;
+    }
+
+    function countTotalTicks(IConcentratedLiquidityPool pool) internal view returns (uint256 count) {
+        IConcentratedLiquidityPool.Tick memory tick;
+        int24 current = TickMath.MIN_TICK;
+
+        count = 1;
+        while (current != TickMath.MAX_TICK) {
+            current = pool.ticks(current).nextTick;
+            count += 1;
+        }
     }
 }

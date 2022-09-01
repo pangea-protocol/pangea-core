@@ -14,8 +14,8 @@ import '@primitivefi/hardhat-dodoc';
 import "solidity-coverage";
 import "./tasks";
 
-import { HardhatUserConfig } from "hardhat/config";
-import { removeConsoleLog } from "hardhat-preprocessor";
+import {HardhatUserConfig} from "hardhat/config";
+import {removeConsoleLog} from "hardhat-preprocessor";
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
@@ -31,14 +31,14 @@ const config: HardhatUserConfig = {
   networks: {
     localhost: {
       live: false,
-      chainId:31337,
+      chainId: 31337,
       saveDeployments: true,
       tags: ["local"],
     },
     hardhat: {
-      allowUnlimitedContractSize:true,
+      allowUnlimitedContractSize: true,
       live: false,
-      chainId:31337,
+      chainId: 31337,
       saveDeployments: true,
       tags: ["test", "local"],
       gasPrice: 250000000000,
@@ -51,7 +51,7 @@ const config: HardhatUserConfig = {
     },
     baobab: {
       chainId: 1001,
-      url: 'https://public-node-api.klaytnapi.com/v1/baobab',
+      url: 'https://baobab.ken.stick.us/',
       accounts,
       gasPrice: 250000000000
     },
@@ -69,32 +69,34 @@ const config: HardhatUserConfig = {
     },
     dev: {
       default: 1,
+      cypress: "0x9906594cF4CC26b62fEf0eA53CE159F4d2Ad9a32"
     },
     protocolFeeTo: {
       default: 2,
+      cypress: "0x88219f20e9B4FDa1088f27E71518A0b626cFf21B"
     },
-    user100 : {
+    user100: {
       default: 3,
     },
-    user101 : {
+    user101: {
       default: 4,
     },
-    user102 : {
+    user102: {
       default: 5,
     },
-    user103 : {
+    user103: {
       default: 6,
     },
-    user104 : {
+    user104: {
       default: 7,
     },
-    user105 : {
+    user105: {
       default: 8,
     },
-    user106 : {
+    user106: {
       default: 9,
     },
-    user107 : {
+    user107: {
       default: 10,
     }
   },
@@ -156,7 +158,25 @@ const config: HardhatUserConfig = {
             runs: 2000,
           },
         }
-      }
+      },
+      "contracts/custom/miningPool/MiningPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        }
+      },
+      "contracts/custom/miningPool/MiningPoolManager.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1500,
+          },
+        }
+      },
     }
   },
   dodoc: {
