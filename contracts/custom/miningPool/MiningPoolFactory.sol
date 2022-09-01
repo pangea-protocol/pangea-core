@@ -16,8 +16,8 @@ pragma solidity >=0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../../interfaces/IPoolFactoryCallee.sol";
 import "../../interfaces/IConcentratedLiquidityPoolFactory.sol";
-import "./vendor/EIP173Proxy.sol";
-import "./interfaces/IEIP173Proxy.sol";
+import "../common/vendor/EIP173Proxy.sol";
+import "../common/interfaces/IEIP173Proxy.sol";
 import "./interfaces/IMiningPool.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
