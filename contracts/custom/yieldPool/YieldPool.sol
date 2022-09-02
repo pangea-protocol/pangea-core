@@ -239,11 +239,8 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
             );
             totalTicks += numOfInserted;
         }
-
-        unchecked {
-            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
-        }
+        _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
 
         (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
             priceLower,
@@ -306,10 +303,8 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
 
         _updatePosition(msg.sender, lower, upper, -int128(amount));
 
-        unchecked {
-            reserve0 -= uint128(token0Amount);
-            reserve1 -= uint128(token1Amount);
-        }
+        reserve0 -= uint128(token0Amount);
+        reserve1 -= uint128(token1Amount);
 
         _transferBothTokens(msg.sender, token0Amount, token1Amount);
 
@@ -733,19 +728,15 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         if (_liquidity == 0) return (0, 0);
 
         uint256 duration = airdropDurationAfterLastObservation();
-        unchecked {
-            remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
-            remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
-        }
+        remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
+        remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
     }
 
     function rewardGrowthRemain(uint256 _liquidity) private view returns (uint256 rewardRemain) {
         if (_liquidity == 0) return 0;
 
         uint256 duration = airdropDurationAfterLastObservation();
-        unchecked {
-            rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
-        }
+        rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
     }
 
     function _updateReserves(
@@ -758,17 +749,13 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
             uint128 newBalance = reserve0 + inAmount;
             if (uint256(newBalance) > balance0) revert Token0Missing();
             reserve0 = newBalance;
-            unchecked {
-                reserve1 -= uint128(amountOut);
-            }
+            reserve1 -= uint128(amountOut);
         } else {
             uint256 balance1 = _balance(token1);
             uint128 newBalance = reserve1 + inAmount;
             if (uint256(newBalance) > balance1) revert Token1Missing();
             reserve1 = newBalance;
-            unchecked {
-                reserve0 -= uint128(amountOut);
-            }
+            reserve0 -= uint128(amountOut);
         }
     }
 
