@@ -903,8 +903,6 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         _transfer(token1, shares1, to);
     }
 
-    function _yield() internal {}
-
     /// @dev Generic formula for fee growth inside a range: (globalGrowth - growthBelow - growthAbove)
     /// - available counters: global, outside u, outside v.
 
@@ -933,6 +931,12 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
             (uint256 remain0, uint256 remain1) = airdropGrowthRemain(liquidity);
             _feeGrowthGlobal0 = swapFeeGrowthGlobal0 + airdropGrowthGlobal0 + remain0;
             _feeGrowthGlobal1 = swapFeeGrowthGlobal1 + airdropGrowthGlobal1 + remain1;
+        }
+
+        if (zeroForYield) {
+            _feeGrowthGlobal0 += yieldGrowthGlobal();
+        } else {
+            _feeGrowthGlobal1 += yieldGrowthGlobal();
         }
 
         uint256 feeGrowthOutside0;
@@ -1035,17 +1039,17 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
 
     function yieldGrowthGlobal() public view returns (uint256) {
         bool _zeroForYield = zeroForYield;
-        uint128 balance = _getYieldBalance(_zeroForYield);
+        uint128 yBalance = _getYieldBalance(_zeroForYield);
         uint256 _reserve = _zeroForYield ? reserve0 : reserve1;
 
         // no need to update
-        if (balance <= _reserve) return _yieldGrowthGlobal;
+        if (yBalance <= _reserve) return _yieldGrowthGlobal;
 
         // if liquidity == 0, can't update yieldGrowthGlobal
         uint256 _liquidity = liquidity;
         if (_liquidity == 0) return _yieldGrowthGlobal;
 
-        uint256 yield = balance - _reserve + pendingYield;
+        uint256 yield = yBalance - _reserve + pendingYield;
 
         // calculate protocol Fee
         uint128 delta = uint128(FullMath.mulDivRoundingUp(yield, protocolFee, 1e4));
@@ -1104,44 +1108,45 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     }
 
     function _updateYield(bool _zeroForYield) internal {
-        uint128 balance = _getYieldBalance(_zeroForYield);
+        uint128 yBalance = _getYieldBalance(_zeroForYield);
 
         uint128 _reserve;
         if (_zeroForYield) {
             _reserve = reserve0;
-            reserve0 = balance;
+            reserve0 = yBalance;
         } else {
             _reserve = reserve1;
-            reserve1 = balance;
+            reserve1 = yBalance;
         }
 
         // no need to update
-        if (balance <= _reserve) return;
+        if (yBalance <= _reserve) return;
 
-        uint128 yield = balance - _reserve;
+        // @dev calculate balance diff over time, it is the interest for yield-bearing token holders
+        uint128 revenue = yBalance - _reserve;
         uint128 _liquidity = liquidity;
 
         if (_liquidity == 0) {
             // if liquidity == 0, can't update yieldGrowthGlobal
-            pendingYield += yield;
+            pendingYield += revenue;
             return;
         }
 
         uint128 _pendingYield = pendingYield;
         if (_pendingYield > 0) {
-            yield += _pendingYield;
+            revenue += _pendingYield;
             pendingYield = 0;
         }
 
         // calculate protocol Fee
-        uint128 delta = uint128(FullMath.mulDivRoundingUp(yield, protocolFee, 1e4));
+        uint128 delta = uint128(FullMath.mulDivRoundingUp(revenue, protocolFee, 1e4));
         if (_zeroForYield) {
             token0ProtocolFee += delta;
         } else {
             token1ProtocolFee += delta;
         }
 
-        _yieldGrowthGlobal += FullMath.mulDiv(yield - delta, FixedPoint.Q128, _liquidity);
+        _yieldGrowthGlobal += FullMath.mulDiv(revenue - delta, FixedPoint.Q128, _liquidity);
     }
 
     function _updateShare(bool _zeroForYield) internal {
