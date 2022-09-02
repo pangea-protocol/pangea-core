@@ -44,7 +44,7 @@ const config: HardhatUserConfig = {
       gasPrice: 250000000000,
       accounts: {
         // 1,000,000,000
-        accountsBalance: "10000000000000000000000000000"
+        accountsBalance: "1000000000000000000000000000000000000000"
       },
       // Solidity-coverage overrides gasPrice to 1 which is not compatible with EIP1559
       hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",

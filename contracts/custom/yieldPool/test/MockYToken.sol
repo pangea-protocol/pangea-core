@@ -12,7 +12,7 @@ contract MockYToken is ERC20 {
     /// @notice Total staked through this contract including restaked amount
     uint256 public totalStaking;
 
-    uint256 public liquidityIndex = 10 ** 27;
+    uint256 public liquidityIndex = 10 ** 18;
 
     /// @notice Amount of shares for each user
     mapping(address => uint256) private shares;
@@ -210,25 +210,6 @@ contract MockYToken is ERC20 {
         shares[to] = toShares + amount;
     }
 
-//    /**
-//     * @notice Returns amount of yToken for corresponding shares
-//     * @dev Shares --> Klay
-//     * @param sharesAmount amount of shares to convert
-//     */
-//    function _getKlayByShares(uint256 sharesAmount) private view returns (uint256) {
-//        return FullMath.mulDivRoundingUp(sharesAmount, totalStaking, totalShares);
-//    }
-//
-//    /**
-//     * @notice Returns amount of shares for corresponding yToken
-//     * @dev Klay --> Shares
-//     * @param klayAmount amount of yToken to convert
-//     */
-//    function _getSharesByKlay(uint256 klayAmount) private view returns (uint256) {
-//        if (totalStaking == 0) return klayAmount;
-//        return FullMath.mulDiv(klayAmount, totalShares, totalStaking);
-//    }
-
     /**
          * @notice Returns amount of fKlay for corresponding shares
      * @dev Shares --> Klay
@@ -239,7 +220,7 @@ contract MockYToken is ERC20 {
     view
     returns (uint256)
     {
-        return (sharesAmount * liquidityIndex + liquidityIndex - 1) / 10**27;
+        return (sharesAmount * liquidityIndex) / 10**27;
     }
 
     /**
@@ -252,6 +233,6 @@ contract MockYToken is ERC20 {
     view
     returns (uint256)
     {
-        return (klayAmount * 10**27) / liquidityIndex;
+        return (klayAmount * 10**27 + liquidityIndex - 1) / liquidityIndex;
     }
 }
