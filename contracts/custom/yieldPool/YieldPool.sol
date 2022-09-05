@@ -586,7 +586,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     }
 
     /// @dev Collects Protocol Fees
-    function collectProtocolFee() external lock returns (uint128 amount0, uint128 amount1) {
+    function collectProtocolFee() external lock settleYield returns (uint128 amount0, uint128 amount1) {
         address _protocolFeeTo = masterDeployer.protocolFeeTo();
         address[] memory tokens = new address[](2);
         uint256[] memory amounts = new uint256[](2);
@@ -628,7 +628,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         uint128 airdrop1,
         uint256 startTime,
         uint256 period
-    ) external lock {
+    ) external lock settleYield {
         if (masterDeployer.airdropDistributor() != msg.sender) revert NotAuthorized();
         if (startTime + period <= block.timestamp) revert InvalidParam();
 
@@ -679,7 +679,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     /// @dev deposit Reward Token. msg.sender should approve the amount of reward token.
     //       This will be distributed at the next airdrop.
     /// @param amount amount of reward to deposit
-    function depositReward(uint128 amount) external {
+    function depositReward(uint128 amount) external settleYield {
         _transferFromMsgSender(rewardToken, amount);
         depositedReward += amount;
     }
