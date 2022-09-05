@@ -21,7 +21,7 @@ contract ClaimAggregator is PangeaBatchable, ReentrancyGuardUpgradeable {
         address recipient,
         bool unwrap
     ) external nonReentrant returns (uint256 token0Amount, uint256 token1Amount) {
-        if (!_isApprovedOrOwner(poolManager, msg.sender, positionId)) revert NotAllowed();
+        if (!isOwner(poolManager, msg.sender, positionId)) revert NotAllowed();
         return IClaimCallee(poolManager).collect(positionId, recipient, unwrap);
     }
 
@@ -31,18 +31,16 @@ contract ClaimAggregator is PangeaBatchable, ReentrancyGuardUpgradeable {
         address recipient,
         bool unwrap
     ) external nonReentrant returns (uint256 rewardAmount) {
-        if (!_isApprovedOrOwner(poolManager, msg.sender, positionId)) revert NotAllowed();
+        if (!isOwner(poolManager, msg.sender, positionId)) revert NotAllowed();
         return IClaimCallee(poolManager).collectReward(positionId, recipient, unwrap);
     }
 
-    function _isApprovedOrOwner(
+    function isOwner(
         address poolManager,
         address spender,
         uint256 tokenId
     ) internal view returns (bool) {
         address owner = IClaimCallee(poolManager).ownerOf(tokenId);
-        return (spender == owner ||
-            IClaimCallee(poolManager).getApproved(tokenId) == spender ||
-            IClaimCallee(poolManager).isApprovedForAll(owner, spender));
+        return spender == owner;
     }
 }
