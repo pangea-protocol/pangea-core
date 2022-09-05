@@ -16,7 +16,7 @@ import {getDx, getDy, getPriceAtTick, sortTokens} from "../../harness/utils";
 import {expect} from "chai";
 import {Pangea} from "../../harness/pangea";
 
-describe.only("ZAP:HELPER", function () {
+describe("ZAP:HELPER", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 2000; // 0.2%
   const TICK_SPACING = 40;
