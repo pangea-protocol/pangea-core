@@ -17,26 +17,28 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../../../interfaces/IMasterDeployer.sol";
-import "../../../interfaces/IPositionManager.sol";
-import "../../../interfaces/IPoolEventStruct.sol";
-import "../../../interfaces/IPoolLogger.sol";
-import "../../../interfaces/IPoolFlashCallback.sol";
-import "../../../interfaces/IConcentratedLiquidityPool.sol";
-import "../../../interfaces/LPAirdropCallee.sol";
-import "../../../interfaces/IPoolFactoryCallee.sol";
-import "../../../interfaces/IProtocolFeeReceiver.sol";
-import "../../../libraries/FullMath.sol";
-import "../../../libraries/TickMath.sol";
-import "../../../libraries/UnsafeMath.sol";
-import "../../../libraries/DyDxMath.sol";
-import "../../../libraries/FeeLib.sol";
-import "../../../libraries/FixedPoint.sol";
-import "../../common/libraries/RewardTicks.sol";
-import "./../interfaces/IMiningPoolStruct.sol";
+import "../../interfaces/IMasterDeployer.sol";
+import "../../interfaces/IPositionManager.sol";
+import "../../interfaces/IPoolEventStruct.sol";
+import "../../interfaces/IPoolLogger.sol";
+import "../../interfaces/IPoolFlashCallback.sol";
+import "../../interfaces/IConcentratedLiquidityPool.sol";
+import "../../interfaces/LPAirdropCallee.sol";
+import "../../interfaces/IPoolFactoryCallee.sol";
+import "../../interfaces/IProtocolFeeReceiver.sol";
+import "../../libraries/FullMath.sol";
+import "../../libraries/TickMath.sol";
+import "../../libraries/UnsafeMath.sol";
+import "../../libraries/DyDxMath.sol";
+import "../../libraries/FeeLib.sol";
+import "../../libraries/FixedPoint.sol";
+import "../common/libraries/RewardTicks.sol";
+import "../miningPool/interfaces/IMiningPoolStruct.sol";
+import "./interfaces/IYieldToken.sol";
+import "./interfaces/IYieldPoolStruct.sol";
 
-/// @notice Custom Pool : Reward liquidity pool, it's for liquidity mining using reward token
-contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee, Initializable {
+/// @notice Custom Pool : Yield pool, it's for liquidity mining using reward token
+contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee, Initializable {
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -96,6 +98,12 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     uint128 internal reserve0;
     uint128 internal reserve1;
 
+    // @dev if `zeroForYield` is true, token0 is yield-bearing token. if not, token1 is yield-bearing token.
+    bool internal zeroForYield;
+    uint128 internal shareReserve;
+    uint128 internal pendingYield;
+    uint256 internal _yieldGrowthGlobal;
+
     /// @dev Sqrt of price aka. √(token1/token0), multiplied by 2 ^ 96.
     uint160 public price;
     /// @dev Tick that is just below the current price.
@@ -132,6 +140,8 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     error NotAuthorized();
     error AlreadyPriceInitialized();
 
+    event DistributeReward(address token, uint256 amount, uint256 startTime, uint256 period);
+
     modifier lock() {
         if (unlocked == 2) revert Locked();
         unlocked = 2;
@@ -139,14 +149,17 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         unlocked = 1;
     }
 
-    function greet() external view returns (string memory) {
-        return "hello";
+    modifier settleYield() {
+        bool _zeroForYield = zeroForYield;
+        _updateYield(_zeroForYield);
+        _;
+        _updateShare(_zeroForYield);
     }
 
     function initialize(bytes memory _deployData, address _masterDeployer) external initializer {
-        (address _token0, address _token1, address _rewardToken, uint24 _swapFee, uint24 _tickSpacing) = abi.decode(
+        (address _token0, address _token1, address _rewardToken, uint24 _swapFee, uint24 _tickSpacing, bool _zeroForYield) = abi.decode(
             _deployData,
-            (address, address, address, uint24, uint24)
+            (address, address, address, uint24, uint24, bool)
         );
 
         token0 = _token0;
@@ -156,6 +169,8 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         tickSpacing = _tickSpacing;
         factory = msg.sender;
         masterDeployer = IMasterDeployer(_masterDeployer);
+
+        zeroForYield = _zeroForYield;
 
         MAX_TICK_LIQUIDITY = Ticks.getMaxLiquidity(_tickSpacing);
         ticks[TickMath.MIN_TICK] = Tick(TickMath.MIN_TICK, TickMath.MAX_TICK, uint128(0), 0, 0, 0);
@@ -184,7 +199,7 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     }
 
     /// @dev Mints LP tokens - should be called via the CL pool manager contract.
-    function mint(MintParams memory mintParams) external lock returns (uint256 liquidityMinted) {
+    function mint(MintParams memory mintParams) external lock settleYield returns (uint256 liquidityMinted) {
         _ensureTickSpacing(mintParams.lower, mintParams.upper);
 
         uint256 priceLower = uint256(TickMath.getSqrtRatioAtTick(mintParams.lower));
@@ -224,11 +239,8 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
             );
             totalTicks += numOfInserted;
         }
-
-        unchecked {
-            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
-        }
+        _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
 
         (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
             priceLower,
@@ -267,7 +279,7 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         int24 lower,
         int24 upper,
         uint128 amount
-    ) external lock returns (uint256 token0Amount, uint256 token1Amount) {
+    ) external lock settleYield returns (uint256 token0Amount, uint256 token1Amount) {
         uint160 priceLower = TickMath.getSqrtRatioAtTick(lower);
         uint160 priceUpper = TickMath.getSqrtRatioAtTick(upper);
         uint160 currentPrice = price;
@@ -291,10 +303,8 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
 
         _updatePosition(msg.sender, lower, upper, -int128(amount));
 
-        unchecked {
-            reserve0 -= uint128(token0Amount);
-            reserve1 -= uint128(token1Amount);
-        }
+        reserve0 -= uint128(token0Amount);
+        reserve1 -= uint128(token1Amount);
 
         _transferBothTokens(msg.sender, token0Amount, token1Amount);
 
@@ -322,7 +332,7 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         int24 upper,
         uint256 desiredToken0Fees,
         uint256 desiredToken1Fees
-    ) external lock returns (uint256 token0Fees, uint256 token1Fees) {
+    ) external lock settleYield returns (uint256 token0Fees, uint256 token1Fees) {
         _updatePositionFee(msg.sender, lower, upper);
         (token0Fees, token1Fees) = _collectFee(msg.sender, lower, upper, desiredToken0Fees, desiredToken1Fees);
 
@@ -347,7 +357,7 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     }
 
     /// @dev Swaps one token for another. The router must prefund this contract and ensure there isn't too much slippage.
-    function swap(bytes memory data) external lock returns (uint256 amountOut) {
+    function swap(bytes memory data) external lock settleYield returns (uint256 amountOut) {
         (bool zeroForOne, address recipient) = abi.decode(data, (bool, address));
 
         uint256 inAmount = _balance(zeroForOne ? token0 : token1) - (zeroForOne ? reserve0 : reserve1);
@@ -480,7 +490,6 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         }
 
         _updateReserves(zeroForOne, uint128(inAmount), amountOut);
-
         _updateSwapFees(zeroForOne, cache.swapFeeGrowthGlobalA, uint128(cache.protocolFee));
 
         if (zeroForOne) {
@@ -518,16 +527,17 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
-    ) external lock {
-        uint256 _liquidity = liquidity;
-        if (_liquidity == 0) revert LiquidityZero();
+    ) external lock settleYield {
+        FlashCache memory cache;
+        {
+            (uint256 flashFee0, uint256 flashFee1) = FeeLib.calculateFlashFee(amount0, amount1, swapFee);
+            cache = FlashCache(amount0, amount1, reserve0, reserve1, flashFee0, flashFee1, liquidity);
+        }
 
-        uint256 balance0Before = reserve0;
-        uint256 balance1Before = reserve1;
+        if (cache.liquidity == 0) revert LiquidityZero();
 
         _transferBothTokens(recipient, amount0, amount1);
-        (uint256 flashFee0, uint256 flashFee1) = FeeLib.calculateFlashFee(amount0, amount1, swapFee);
-        IPoolFlashCallback(msg.sender).flashCallback(flashFee0, flashFee1, data);
+        IPoolFlashCallback(msg.sender).flashCallback(cache.flashFee0, cache.flashFee1, data);
 
         uint256 paid0;
         uint256 paid1;
@@ -535,15 +545,15 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
             uint256 balance0After = _balance(token0);
             uint256 balance1After = _balance(token1);
 
-            if (balance0Before + flashFee0 > balance0After) revert Token0Missing();
-            if (balance1Before + flashFee1 > balance1After) revert Token1Missing();
+            if (cache.reserve0 + cache.flashFee0 > balance0After) revert Token0Missing();
+            if (cache.reserve1 + cache.flashFee1 > balance1After) revert Token1Missing();
 
             // update reserves info
             reserve0 = SafeCast.toUint128(balance0After);
             reserve1 = SafeCast.toUint128(balance1After);
 
-            paid0 = balance0After - balance0Before;
-            paid1 = balance1After - balance1Before;
+            paid0 = balance0After - cache.reserve0;
+            paid1 = balance1After - cache.reserve1;
         }
 
         uint256 _protocolFeeRate = protocolFee;
@@ -552,25 +562,31 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
             // update swap Fee & protocol Fee for token0
             uint128 delta0 = uint128(FullMath.mulDivRoundingUp(paid0, _protocolFeeRate, 1e4));
             token0ProtocolFee += delta0;
-            swapFeeGrowthGlobal0 += FullMath.mulDiv(paid0 - delta0, FixedPoint.Q128, _liquidity);
+            swapFeeGrowthGlobal0 += FullMath.mulDiv(paid0 - delta0, FixedPoint.Q128, cache.liquidity);
         }
 
         if (paid1 > 0) {
             // update swap Fee & protocol Fee for token1
             uint128 delta1 = uint128(FullMath.mulDivRoundingUp(paid1, _protocolFeeRate, 1e4));
             token1ProtocolFee += delta1;
-            swapFeeGrowthGlobal1 += FullMath.mulDiv(paid1 - delta1, FixedPoint.Q128, _liquidity);
+            swapFeeGrowthGlobal1 += FullMath.mulDiv(paid1 - delta1, FixedPoint.Q128, cache.liquidity);
         }
 
         try
             logger.emitFlash(
-                IPoolEventStruct.FlashLoggingParams({sender: msg.sender, amount0: amount0, amount1: amount1, paid0: paid0, paid1: paid1})
+                IPoolEventStruct.FlashLoggingParams({
+                    sender: msg.sender,
+                    amount0: cache.amount0,
+                    amount1: cache.amount1,
+                    paid0: paid0,
+                    paid1: paid1
+                })
             )
         {} catch {}
     }
 
     /// @dev Collects Protocol Fees
-    function collectProtocolFee() external lock returns (uint128 amount0, uint128 amount1) {
+    function collectProtocolFee() external lock settleYield returns (uint128 amount0, uint128 amount1) {
         address _protocolFeeTo = masterDeployer.protocolFeeTo();
         address[] memory tokens = new address[](2);
         uint256[] memory amounts = new uint256[](2);
@@ -612,12 +628,14 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         uint128 airdrop1,
         uint256 startTime,
         uint256 period
-    ) external lock {
+    ) external lock settleYield {
         if (masterDeployer.airdropDistributor() != msg.sender) revert NotAuthorized();
         if (startTime + period <= block.timestamp) revert InvalidParam();
 
         uint128 reward = depositedReward;
         depositedReward = 0;
+
+        if (reward > 0) emit DistributeReward(rewardToken, reward, startTime, period);
 
         // not allowed before the previous airdrop is ended
         uint256 _airdropStartTime = airdropStartTime;
@@ -661,7 +679,7 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     /// @dev deposit Reward Token. msg.sender should approve the amount of reward token.
     //       This will be distributed at the next airdrop.
     /// @param amount amount of reward to deposit
-    function depositReward(uint128 amount) external {
+    function depositReward(uint128 amount) external settleYield {
         _transferFromMsgSender(rewardToken, amount);
         depositedReward += amount;
     }
@@ -710,19 +728,15 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
         if (_liquidity == 0) return (0, 0);
 
         uint256 duration = airdropDurationAfterLastObservation();
-        unchecked {
-            remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
-            remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
-        }
+        remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
+        remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
     }
 
     function rewardGrowthRemain(uint256 _liquidity) private view returns (uint256 rewardRemain) {
         if (_liquidity == 0) return 0;
 
         uint256 duration = airdropDurationAfterLastObservation();
-        unchecked {
-            rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
-        }
+        rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
     }
 
     function _updateReserves(
@@ -735,17 +749,13 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
             uint128 newBalance = reserve0 + inAmount;
             if (uint256(newBalance) > balance0) revert Token0Missing();
             reserve0 = newBalance;
-            unchecked {
-                reserve1 -= uint128(amountOut);
-            }
+            reserve1 -= uint128(amountOut);
         } else {
             uint256 balance1 = _balance(token1);
             uint128 newBalance = reserve1 + inAmount;
             if (uint256(newBalance) > balance1) revert Token1Missing();
             reserve1 = newBalance;
-            unchecked {
-                reserve0 -= uint128(amountOut);
-            }
+            reserve0 -= uint128(amountOut);
         }
     }
 
@@ -923,6 +933,12 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
             _feeGrowthGlobal1 = swapFeeGrowthGlobal1 + airdropGrowthGlobal1 + remain1;
         }
 
+        if (zeroForYield) {
+            _feeGrowthGlobal0 += yieldGrowthGlobal();
+        } else {
+            _feeGrowthGlobal1 += yieldGrowthGlobal();
+        }
+
         uint256 feeGrowthOutside0;
         uint256 feeGrowthOutside1;
         if (lowerTick <= currentTick) {
@@ -1007,16 +1023,37 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
 
     /// @notice The total fee growth of token0 collected per unit of liquidity for the entire life of the pool
     function feeGrowthGlobal0() external view returns (uint256) {
-        return _feeGrowthGlobal(swapFeeGrowthGlobal0, airdropGrowthGlobal0, airdrop0PerSecond);
+        uint256 growthGlobal = zeroForYield ? yieldGrowthGlobal() : 0;
+        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal0, airdropGrowthGlobal0, airdrop0PerSecond);
     }
 
     /// @notice The total fee growth of token1 collected per unit of liquidity for the entire life of the pool
     function feeGrowthGlobal1() external view returns (uint256) {
-        return _feeGrowthGlobal(swapFeeGrowthGlobal1, airdropGrowthGlobal1, airdrop1PerSecond);
+        uint256 growthGlobal = zeroForYield ? 0 : yieldGrowthGlobal();
+        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal1, airdropGrowthGlobal1, airdrop1PerSecond);
     }
 
     function rewardGrowthGlobal() external view returns (uint256) {
         return _feeGrowthGlobal(0, rewardGrowthGlobal_, rewardPerSecond);
+    }
+
+    function yieldGrowthGlobal() public view returns (uint256) {
+        bool _zeroForYield = zeroForYield;
+        uint128 yBalance = _getYieldBalance(_zeroForYield);
+        uint256 _reserve = _zeroForYield ? reserve0 : reserve1;
+
+        // no need to update
+        if (yBalance <= _reserve) return _yieldGrowthGlobal;
+
+        // if liquidity == 0, can't update yieldGrowthGlobal
+        uint256 _liquidity = liquidity;
+        if (_liquidity == 0) return _yieldGrowthGlobal;
+
+        uint256 yield = yBalance - _reserve + pendingYield;
+
+        // calculate protocol Fee
+        uint128 delta = uint128(FullMath.mulDivRoundingUp(yield, protocolFee, 1e4));
+        return _yieldGrowthGlobal + FullMath.mulDiv(yield - delta, FixedPoint.Q128, _liquidity);
     }
 
     function _feeGrowthGlobal(
@@ -1068,5 +1105,57 @@ contract MockMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, 
     function getSecondsGrowthAndLastObservation() external view returns (uint160 _secondsGrowthGlobal, uint32 _lastObservation) {
         _secondsGrowthGlobal = secondsGrowthGlobal;
         _lastObservation = lastObservation;
+    }
+
+    function _updateYield(bool _zeroForYield) internal {
+        uint128 yBalance = _getYieldBalance(_zeroForYield);
+
+        uint128 _reserve;
+        if (_zeroForYield) {
+            _reserve = reserve0;
+            reserve0 = yBalance;
+        } else {
+            _reserve = reserve1;
+            reserve1 = yBalance;
+        }
+
+        // no need to update
+        if (yBalance <= _reserve) return;
+
+        // @dev calculate balance diff over time, it is the interest for yield-bearing token holders
+        uint128 revenue = yBalance - _reserve;
+        uint128 _liquidity = liquidity;
+
+        if (_liquidity == 0) {
+            // if liquidity == 0, can't update yieldGrowthGlobal
+            pendingYield += revenue;
+            return;
+        }
+
+        uint128 _pendingYield = pendingYield;
+        if (_pendingYield > 0) {
+            revenue += _pendingYield;
+            pendingYield = 0;
+        }
+
+        // calculate protocol Fee
+        uint128 delta = uint128(FullMath.mulDivRoundingUp(revenue, protocolFee, 1e4));
+        if (_zeroForYield) {
+            token0ProtocolFee += delta;
+        } else {
+            token1ProtocolFee += delta;
+        }
+
+        _yieldGrowthGlobal += FullMath.mulDiv(revenue - delta, FixedPoint.Q128, _liquidity);
+    }
+
+    function _updateShare(bool _zeroForYield) internal {
+        address token = _zeroForYield ? token0 : token1;
+        shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+    }
+
+    function _getYieldBalance(bool _zeroForYield) internal view returns (uint128) {
+        address token = _zeroForYield ? token0 : token1;
+        return uint128(IYieldToken(token).getKlayByShares(shareReserve));
     }
 }

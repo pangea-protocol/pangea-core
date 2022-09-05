@@ -21,11 +21,12 @@ import "../common/interfaces/IEIP173Proxy.sol";
 import "../common/interfaces/ICustomPool.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
-contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
+contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
     address public masterDeployer;
     address public poolLogger;
     address public manager;
     address private poolImplementation;
+    address public yieldToken;
 
     mapping(address => mapping(address => address[])) public pools;
     mapping(bytes32 => address) public configAddress;
@@ -51,7 +52,8 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
     function initialize(
         address _implementation,
         address _masterDeployer,
-        address _poolLogger
+        address _poolLogger,
+        address _yieldToken
     ) external initializer {
         if (_implementation == address(0)) revert ZeroAddress();
         if (_masterDeployer == address(0)) revert ZeroAddress();
@@ -59,6 +61,7 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
         poolImplementation = _implementation;
         masterDeployer = _masterDeployer;
         poolLogger = _poolLogger;
+        yieldToken = _yieldToken;
 
         __Ownable_init();
         manager = _msgSender();
@@ -72,11 +75,14 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
             (address, address, address, uint24, uint160, uint24)
         );
 
+        if (!availableConfigs[
+            keccak256(abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing))
+        ]) revert InvalidConfig();
+
         // Strips any extra data.
         // Don't include price in _deployData to enable predictable address calculation.
-        _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
+        _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing, tokenA == yieldToken);
         bytes32 salt = keccak256(_deployData);
-        if (!availableConfigs[salt]) revert InvalidConfig();
 
         pool = address(new EIP173Proxy{salt: salt}(poolImplementation, address(this), ""));
         ICustomPool(pool).initialize(_deployData, masterDeployer);
@@ -123,6 +129,7 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
         uint24 tickSpacing
     ) external onlyManager {
         if (tokenA >= tokenB) revert WrongTokenOrder();
+        if (tokenA != yieldToken && tokenB != yieldToken) revert InvalidToken();
         if (tokenA == rewardToken || tokenB == rewardToken) revert InvalidToken();
 
         bytes memory _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);

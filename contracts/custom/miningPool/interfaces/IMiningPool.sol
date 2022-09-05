@@ -4,12 +4,10 @@ pragma solidity >=0.8.0;
 
 import "./IMiningPoolStruct.sol";
 import "../../../interfaces/IConcentratedLiquidityPool.sol";
+import "../../common/interfaces/ICustomPool.sol";
 
 /// @notice Mining Pool interface.
-interface IMiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
-    ///
-    function initialize(bytes memory _deployData, address _masterDeployer) external;
-
+interface IMiningPool is ICustomPool, IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
     /// @notice reward Token
     function rewardToken() external view returns (address);
 
