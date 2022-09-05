@@ -1160,8 +1160,8 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         uint128 _reserve = _zeroForYield ? reserve0 : reserve1;
 
         // no need to update
-        if (yBalance <= _reserve) return _yieldGrowthGlobal;
-        return _yieldGrowthGlobal + yBalance - _reserve;
+        if (yBalance <= _reserve) return _accumulativeYield + pendingYield;
+        return _accumulativeYield + pendingYield + yBalance - _reserve;
     }
 
     function _updateShare(bool _zeroForYield) internal {
