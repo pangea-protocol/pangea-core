@@ -1,7 +1,6 @@
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {waitConfirmations} from "./utils";
-import {MasterDeployer} from "../types";
 import {BigNumber} from "ethers";
 
 const deployFunction: DeployFunction = async function ({
