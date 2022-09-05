@@ -29,7 +29,7 @@ import { Pangea } from "../../harness/pangea";
  * [5] Does it operate normally when the price impact occurs up to the end price of the pool?
  *
  */
-describe.only("CLAIM AGGREGATOR", function () {
+describe("CLAIM AGGREGATOR", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_BASE = 1000000;
   const SWAP_FEE = 2000; // 0.2%
