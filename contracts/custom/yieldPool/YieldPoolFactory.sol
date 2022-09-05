@@ -75,11 +75,14 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
             (address, address, address, uint24, uint160, uint24)
         );
 
+        if (!availableConfigs[
+            keccak256(abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing))
+        ]) revert InvalidConfig();
+
         // Strips any extra data.
         // Don't include price in _deployData to enable predictable address calculation.
         _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing, tokenA == yieldToken);
         bytes32 salt = keccak256(_deployData);
-        if (!availableConfigs[salt]) revert InvalidConfig();
 
         pool = address(new EIP173Proxy{salt: salt}(poolImplementation, address(this), ""));
         ICustomPool(pool).initialize(_deployData, masterDeployer);
