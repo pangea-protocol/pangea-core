@@ -71,8 +71,8 @@ describe("Y Token TEST", function () {
       const [after1, after2] = await Promise.all([yToken.balanceOf(user1.address), yToken.balanceOf(user2.address)])
 
       // THEN
-      expect(before1.sub(after1)).to.be.eq(transferAmount)
-      expect(after2.sub(before2)).to.be.eq(transferAmount)
+      expect(before1.sub(after1)).to.be.gte(transferAmount).lte(transferAmount.add(1))
+      expect(after2.sub(before2)).to.be.gte(transferAmount).lte(transferAmount.add(1))
     });
   });
 
