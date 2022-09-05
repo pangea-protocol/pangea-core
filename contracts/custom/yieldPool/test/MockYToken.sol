@@ -211,7 +211,7 @@ contract MockYToken is ERC20 {
     }
 
     /**
-         * @notice Returns amount of fKlay for corresponding shares
+    * @notice Returns amount of fKlay for corresponding shares
      * @dev Shares --> Klay
      * @param sharesAmount amount of shares to convert
      */
@@ -220,7 +220,7 @@ contract MockYToken is ERC20 {
     view
     returns (uint256)
     {
-        return (sharesAmount * liquidityIndex) / 10**27;
+        return (sharesAmount * liquidityIndex) / 10**6 / 10 **21;
     }
 
     /**

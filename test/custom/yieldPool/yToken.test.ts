@@ -6,7 +6,7 @@ import {expect} from "chai";
 
 /**
  */
-describe.only("Y Token TEST", function () {
+describe("Y Token TEST", function () {
   let _snapshotId: string;
   let snapshotId: string;
 
@@ -112,7 +112,7 @@ describe.only("Y Token TEST", function () {
     expect(after2.sub(before2)).to.be.eq(transferAmount)
   });
 
-  it.only("case 3) ", async () => {
+  it("case 3) ", async () => {
     /**
      * 상황
      * [1] user1가 11 KLAY만큼 스테이킹
@@ -153,7 +153,7 @@ describe.only("Y Token TEST", function () {
     expect(after2.sub(before2)).to.be.eq(transferAmount)
   });
 
-  it("case 3) ", async () => {
+  it("case 4) ", async () => {
     /**
      * 상황
      * [1] user1가 11 KLAY만큼 스테이킹
@@ -196,7 +196,7 @@ describe.only("Y Token TEST", function () {
     }
   });
 
-  it.only("case 4) ", async () => {
+  it("case 5) ", async () => {
     /**
      * 상황
      * [1] user1가 11 KLAY만큼 스테이킹
@@ -237,7 +237,7 @@ describe.only("Y Token TEST", function () {
     }
   })
 
-  it("case 5) ", async () => {
+  it("case 6) ", async () => {
     /**
      * 상황
      * [1] user1가 1 ~ 1001 KLAY만큼 스테이킹
