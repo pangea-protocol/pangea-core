@@ -103,6 +103,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     uint128 internal shareReserve;
     uint128 internal pendingYield;
     uint256 internal _yieldGrowthGlobal;
+    uint256 internal _accumulativeYield;
 
     /// @dev Sqrt of price aka. √(token1/token0), multiplied by 2 ^ 96.
     uint160 public price;
@@ -1109,18 +1110,16 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
 
     function _updateYield(bool _zeroForYield) internal {
         uint128 yBalance = _getYieldBalance(_zeroForYield);
-
-        uint128 _reserve;
-        if (_zeroForYield) {
-            _reserve = reserve0;
-            reserve0 = yBalance;
-        } else {
-            _reserve = reserve1;
-            reserve1 = yBalance;
-        }
+        uint128 _reserve = _zeroForYield ? reserve0 : reserve1;
 
         // no need to update
         if (yBalance <= _reserve) return;
+
+        if (_zeroForYield) {
+            reserve0 = yBalance;
+        } else {
+            reserve1 = yBalance;
+        }
 
         // @dev calculate balance diff over time, it is the interest for yield-bearing token holders
         uint128 revenue = yBalance - _reserve;
@@ -1147,6 +1146,22 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         }
 
         _yieldGrowthGlobal += FullMath.mulDiv(revenue - delta, FixedPoint.Q128, _liquidity);
+
+        // @dev accumulativeYield is for reporting yield APR. allows overflow.
+        unchecked {
+            _accumulativeYield += revenue;
+        }
+    }
+
+    /// @notice return The total yield value earned so far from the pool
+    function accumulativeYield() external view returns (uint256) {
+        bool _zeroForYield = zeroForYield;
+        uint128 yBalance = _getYieldBalance(_zeroForYield);
+        uint128 _reserve = _zeroForYield ? reserve0 : reserve1;
+
+        // no need to update
+        if (yBalance <= _reserve) return _yieldGrowthGlobal;
+        return _yieldGrowthGlobal + yBalance - _reserve;
     }
 
     function _updateShare(bool _zeroForYield) internal {
