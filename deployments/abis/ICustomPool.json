@@ -1,0 +1,20 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_deployData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "_masterDeployer",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

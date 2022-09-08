@@ -18,7 +18,7 @@ import { describe } from "mocha";
 import { YieldPangea } from "./YieldPangea";
 
 /**
- * Test for Swap in Reward Liquidity Pool
+ * Test for Swap in Yield Pool
  *
  * [1] Is the swap within the price range calculated in the form of X*Y=K?
  *
@@ -35,7 +35,7 @@ import { YieldPangea } from "./YieldPangea";
  * [7] Does it work normally if the liquidity in the current price becomes zero?
  *
  */
-describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
+describe("Yield Pool SCENARIO:SWAP", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_BASE = 1000000;
   const SWAP_FEE = 2000; // 0.2%

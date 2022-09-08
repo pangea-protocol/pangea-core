@@ -16,7 +16,7 @@ import { expect } from "chai";
 import { YieldPangea } from "./YieldPangea";
 
 /**
- * Test for Mint & Burn in Reward Liquidity Pool
+ * Test for Mint & Burn in Yield Pool
  *
  * [1] Is the liquidity value calculated correctly based on the price range?
  *
@@ -31,7 +31,7 @@ import { YieldPangea } from "./YieldPangea";
  * [6] When all liquidity is removed, does the Fee return?
  *
  */
-describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
+describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 2000; // 0.2%
   const TICK_SPACING = 40;

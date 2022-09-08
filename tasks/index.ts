@@ -6,3 +6,4 @@ import "./pool";
 import "./position";
 import "./swap";
 import "./time";
+import "./yieldPool";
