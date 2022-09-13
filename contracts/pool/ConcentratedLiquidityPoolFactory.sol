@@ -36,6 +36,8 @@ contract ConcentratedLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLi
     error ZeroAddress();
     error InvalidFeeAndTickSpacing();
 
+    event UpdateAvailableFeeAndTickSpacing(uint24 fee, uint24 tickSpacing, bool ok);
+
     function initialize(address _masterDeployer, address _poolLogger) external initializer {
         if (_masterDeployer == address(0)) revert ZeroAddress();
         if (_poolLogger == address(0)) revert ZeroAddress();
@@ -56,6 +58,8 @@ contract ConcentratedLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLi
         bool ok
     ) external onlyOwner {
         availableFeeAndTickSpacing[fee][tickSpacing] = ok;
+
+        emit UpdateAvailableFeeAndTickSpacing(fee, tickSpacing, ok);
     }
 
     function deployPool(bytes memory _deployData) external returns (address pool) {

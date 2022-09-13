@@ -67,7 +67,7 @@ export class YieldPangea {
         "SwapHelper",
       ])
     );
-    this.yToken = await YToken.deploy() as MockYToken;
+    this.yToken = (await YToken.deploy()) as MockYToken;
 
     const tickLibrary = await RewardTicks.deploy();
     const tickIndexLibrary = await TickIndex.deploy();

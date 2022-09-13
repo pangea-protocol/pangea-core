@@ -83,7 +83,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       token0 = (await Token.deploy("tokenA", "A", 18)) as ERC20Test;
       if (token0.address.toLowerCase() < yToken.address.toLowerCase()) {
         // if order is not correct, retry...
-        break
+        break;
       }
     }
 
@@ -161,8 +161,8 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       nativePoolAddress
     );
 
-    await yToken.stake({value: ethers.utils.parseEther('100')})
-    await yToken.increaseTotalStaking(ethers.utils.parseEther('10'));
+    await yToken.stake({ value: ethers.utils.parseEther("100") });
+    await yToken.increaseTotalStaking(ethers.utils.parseEther("10"));
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -179,7 +179,9 @@ describe("Yield Pool SCENARIO:SWAP", function () {
 
   async function clearBalance() {
     await token0.burnAll(trader.address);
-    await yToken.connect(trader).unstake(await yToken.balanceOf(trader.address));
+    await yToken
+      .connect(trader)
+      .unstake(await yToken.balanceOf(trader.address));
   }
 
   async function traderBalance() {
@@ -212,7 +214,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
     amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
-    await yToken.connect(trader).stake({value:amountIn});
+    await yToken.connect(trader).stake({ value: amountIn });
     await yToken.connect(trader).approve(router.address, amountIn);
 
     await router.connect(trader).exactInputSingle({
@@ -243,7 +245,9 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       .approve(poolManager.address, amount0Desired.mul(4));
 
     const amount1Desired = ethers.utils.parseEther("100");
-    await yToken.connect(liquidityProvider).stake({value:amount1Desired.mul(4)});
+    await yToken
+      .connect(liquidityProvider)
+      .stake({ value: amount1Desired.mul(4) });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amount1Desired.mul(4));
@@ -264,7 +268,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
 
   async function addLiquidityNative(lowerTick: number, upperTick: number) {
     const amountDesired = ethers.utils.parseEther("100");
-    await yToken.connect(liquidityProvider).stake({value:amountDesired});
+    await yToken.connect(liquidityProvider).stake({ value: amountDesired });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -339,7 +343,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       ).amountOut;
 
       // WHEN
-      await yToken.connect(trader).stake({value:amountIn});
+      await yToken.connect(trader).stake({ value: amountIn });
       await yToken.connect(trader).approve(router.address, amountIn);
 
       await expect(
@@ -1234,7 +1238,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       // WHEN
       await clearBalance();
       // For test, trader always mint token
-      await yToken.connect(trader).stake({value:inputAmount});
+      await yToken.connect(trader).stake({ value: inputAmount });
       await yToken.connect(trader).approve(router.address, inputAmount);
 
       const before = await trader.getBalance();
@@ -1386,7 +1390,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       // WHEN
       await clearBalance();
       // For test, trader always mint token
-      await yToken.connect(trader).stake({value:inputAmount});
+      await yToken.connect(trader).stake({ value: inputAmount });
       await yToken.connect(trader).approve(router.address, inputAmount);
 
       await router.connect(trader).exactInput(
@@ -1594,7 +1598,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
 
       // WHEN
       await clearBalance();
-      await tokenIn.connect(trader).stake({value:inputAmount});
+      await tokenIn.connect(trader).stake({ value: inputAmount });
       await tokenIn.connect(trader).approve(router.address, inputAmount);
       const before = await trader.getBalance();
       const tx = await router.connect(trader).exactOutputSingle({
@@ -1694,7 +1698,7 @@ describe("Yield Pool SCENARIO:SWAP", function () {
       const outputAmount = exactInputSingle.amountOut;
 
       // WHEN
-      await yToken.connect(trader).stake({value:inputAmount});
+      await yToken.connect(trader).stake({ value: inputAmount });
       await yToken.connect(trader).approve(router.address, inputAmount);
 
       await router.connect(trader).exactOutputSingle({

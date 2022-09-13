@@ -84,7 +84,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
       token0 = (await Token.deploy("tokenA", "A", 18)) as ERC20Test;
       if (token0.address.toLowerCase() < yToken.address.toLowerCase()) {
         // if order is not correct, retry...
-        break
+        break;
       }
     }
 
@@ -118,8 +118,8 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
     )[0];
     pool = await ethers.getContractAt<YieldPool>("YieldPool", poolAddress);
 
-    await yToken.stake({value: ethers.utils.parseEther('100')})
-    await yToken.increaseTotalStaking(ethers.utils.parseEther('10'));
+    await yToken.stake({ value: ethers.utils.parseEther("100") });
+    await yToken.increaseTotalStaking(ethers.utils.parseEther("10"));
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -136,7 +136,9 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
 
   async function clearBalance() {
     await token0.burnAll(liquidityProvider.address);
-    await yToken.connect(liquidityProvider).unstake(await yToken.balanceOf(liquidityProvider.address));
+    await yToken
+      .connect(liquidityProvider)
+      .unstake(await yToken.balanceOf(liquidityProvider.address));
   }
 
   async function liquidityProviderBalance() {
@@ -170,7 +172,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
     amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
-    await yToken.connect(trader).stake({value:amountIn});
+    await yToken.connect(trader).stake({ value: amountIn });
     await yToken.connect(trader).approve(router.address, amountIn);
 
     await router.connect(trader).exactInputSingle({
@@ -207,7 +209,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
 
-    await yToken.connect(liquidityProvider).stake({value:amountDesired});
+    await yToken.connect(liquidityProvider).stake({ value: amountDesired });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -255,7 +257,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
 
-    await yToken.connect(liquidityProvider).stake({value:amountDesired});
+    await yToken.connect(liquidityProvider).stake({ value: amountDesired });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -427,7 +429,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired);
 
-      await yToken.connect(liquidityProvider).stake({value:amountDesired});
+      await yToken.connect(liquidityProvider).stake({ value: amountDesired });
       await yToken
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired);
@@ -473,7 +475,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired.mul(2));
 
-      await yToken.stake({value:amountDesired.mul(2)});
+      await yToken.stake({ value: amountDesired.mul(2) });
       await yToken
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired.mul(2));
@@ -567,7 +569,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired.mul(2));
 
-      await yToken.stake({value:amountDesired.mul(2)});
+      await yToken.stake({ value: amountDesired.mul(2) });
       await yToken
         .connect(liquidityProvider)
         .approve(poolManager.address, amountDesired.mul(2));
@@ -598,7 +600,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
       await token0.mint(trader.address, amountDesired);
       await token0.connect(trader).approve(poolManager.address, amountDesired);
 
-      await yToken.stake({value:amountDesired});
+      await yToken.stake({ value: amountDesired });
       await yToken.connect(trader).approve(poolManager.address, amountDesired);
 
       // WHEN
@@ -627,7 +629,7 @@ describe("Yield Pool SCENARIO:MINT_AND_BURN", function () {
       await token0.mint(trader.address, amountDesired);
       await token0.connect(trader).approve(poolManager.address, amountDesired);
 
-      await yToken.stake({value:amountDesired});
+      await yToken.stake({ value: amountDesired });
       await yToken.connect(trader).approve(poolManager.address, amountDesired);
 
       // WHEN

@@ -33,13 +33,13 @@ contract ZapHelper {
     //        amount0 = output token0 amount for trading from pool.price() to target price
     //        amount1 = input  token1 amount for trading from pool.price() to target price
     function expectAmount(address pool, uint160 targetPrice)
-    external
-    view
-    returns (
-        bool zeroForOne,
-        uint256 amount0,
-        uint256 amount1
-    )
+        external
+        view
+        returns (
+            bool zeroForOne,
+            uint256 amount0,
+            uint256 amount1
+        )
     {
         ZapCache memory cache;
         {
@@ -111,23 +111,23 @@ contract ZapHelper {
         if (zeroForOne) {
             // Moving backwards through the linked list.
             // Liquidity cannot overflow due to the MAX_TICK_LIQUIDITY requirement.
-        unchecked {
-            if ((cache.nextTickToCross / tickSpacing) % 2 == 0) {
-                currentLiquidity = cache.currentLiquidity - IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
-            } else {
-                currentLiquidity = cache.currentLiquidity + IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+            unchecked {
+                if ((cache.nextTickToCross / tickSpacing) % 2 == 0) {
+                    currentLiquidity = cache.currentLiquidity - IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+                } else {
+                    currentLiquidity = cache.currentLiquidity + IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+                }
             }
-        }
             nextTickToCross = IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).previousTick;
         } else {
             // Moving forwards through the linked list.
-        unchecked {
-            if ((cache.nextTickToCross / tickSpacing) % 2 == 0) {
-                currentLiquidity = cache.currentLiquidity + IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
-            } else {
-                currentLiquidity = cache.currentLiquidity - IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+            unchecked {
+                if ((cache.nextTickToCross / tickSpacing) % 2 == 0) {
+                    currentLiquidity = cache.currentLiquidity + IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+                } else {
+                    currentLiquidity = cache.currentLiquidity - IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).liquidity;
+                }
             }
-        }
             nextTickToCross = IConcentratedLiquidityPool(pool).ticks(cache.nextTickToCross).nextTick;
         }
     }
