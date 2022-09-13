@@ -17,7 +17,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPoolLogger.sol";
 import "../interfaces/IMasterDeployer.sol";
-import "../pool/ConcentratedLiquidityPoolFactory.sol";
 
 /// @notice Pool deployer contract with template factory whitelist
 contract MasterDeployer is OwnableUpgradeable, IMasterDeployer {
@@ -92,14 +91,5 @@ contract MasterDeployer is OwnableUpgradeable, IMasterDeployer {
     /// @notice Return the address of Factory deployed pool
     function getFactoryAddress(address pool) external view returns (address factory) {
         return factoryOf[pool];
-    }
-
-    function setAvailableFeeAndTickSpacing(
-        address factory,
-        uint24 fee,
-        uint24 tickSpacing,
-        bool ok
-    ) external onlyOwner {
-        ConcentratedLiquidityPoolFactory(factory).setAvailableFeeAndTickSpacing(fee, tickSpacing, ok);
     }
 }
