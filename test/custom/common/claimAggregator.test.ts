@@ -76,7 +76,9 @@ describe("CLAIM AGGREGATOR", function () {
     token1 = (await Token.deploy("tokenB", "B", 18)) as ERC20Test;
     [token0, token1] = sortTokens(token0, token1);
 
-    claimAggregator = await (await ethers.getContractFactory('ClaimAggregator')).deploy() as ClaimAggregator;
+    claimAggregator = (await (
+      await ethers.getContractFactory("ClaimAggregator")
+    ).deploy()) as ClaimAggregator;
 
     await token0.mint(
       airdropDistributor.address,
@@ -354,8 +356,17 @@ describe("CLAIM AGGREGATOR", function () {
       await swapToken0ToToken1(inputAmount, BigNumber.from(0));
       await clearLPBalance();
 
-      await poolManager.connect(liquidityProvider).setApprovalForAll(claimAggregator.address, true);
-      await claimAggregator.connect(liquidityProvider).collect(poolManager.address, lp.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .setApprovalForAll(claimAggregator.address, true);
+      await claimAggregator
+        .connect(liquidityProvider)
+        .collect(
+          poolManager.address,
+          lp.positionId,
+          liquidityProvider.address,
+          false
+        );
 
       // THEN
       const originalOutput = await getDy(
@@ -382,10 +393,10 @@ describe("CLAIM AGGREGATOR", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-2 * TICK_SPACING);
       const inputAmount = await getDx(
-          lp.liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        lp.liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
 
       // WHEN
@@ -394,8 +405,16 @@ describe("CLAIM AGGREGATOR", function () {
       await clearLPBalance();
 
       // THEN
-      await expect(claimAggregator.connect(liquidityProvider).collect(poolManager.address, lp.positionId, liquidityProvider.address, false))
-          .to.be.reverted
+      await expect(
+        claimAggregator
+          .connect(liquidityProvider)
+          .collect(
+            poolManager.address,
+            lp.positionId,
+            liquidityProvider.address,
+            false
+          )
+      ).to.be.reverted;
     });
   });
 });

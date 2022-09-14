@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 /// @notice Aggregating Claim Fee & reward in single TX. There are multiple position managers in Pangea Swap.
 contract ClaimAggregator is PangeaBatchable, ReentrancyGuardUpgradeable {
-
     error NotAllowed();
 
     function initialize() external initializer {

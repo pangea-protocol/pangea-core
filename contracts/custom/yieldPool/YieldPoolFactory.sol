@@ -75,9 +75,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
             (address, address, address, uint24, uint160, uint24)
         );
 
-        if (!availableConfigs[
-            keccak256(abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing))
-        ]) revert InvalidConfig();
+        if (!availableConfigs[keccak256(abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing))]) revert InvalidConfig();
 
         // Strips any extra data.
         // Don't include price in _deployData to enable predictable address calculation.

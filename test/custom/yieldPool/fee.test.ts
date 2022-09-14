@@ -83,7 +83,7 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
       token0 = (await Token.deploy("tokenA", "A", 18)) as ERC20Test;
       if (token0.address.toLowerCase() < yToken.address.toLowerCase()) {
         // if order is not correct, retry...
-        break
+        break;
       }
     }
 
@@ -91,29 +91,29 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
 
     // ======== DEPLOY POOL ========
     await poolFactory.setAvailableParameter(
-        token0.address,
-        yToken.address,
-        rewardToken.address,
-        BigNumber.from(SWAP_FEE),
-        BigNumber.from(TICK_SPACING)
+      token0.address,
+      yToken.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
-        poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              yToken.address,
-              rewardToken.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      poolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          yToken.address,
+          rewardToken.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     const poolAddress = (
-        await poolFactory.getPools(token0.address, yToken.address, 0, 1)
+      await poolFactory.getPools(token0.address, yToken.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<YieldPool>("YieldPool", poolAddress);
 
@@ -148,12 +148,16 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
 
   async function clearLPBalance() {
     await token0.burnAll(liquidityProvider.address);
-    await yToken.connect(liquidityProvider).unstake(await yToken.balanceOf(liquidityProvider.address));
+    await yToken
+      .connect(liquidityProvider)
+      .unstake(await yToken.balanceOf(liquidityProvider.address));
   }
 
   async function clearBalance() {
     await token0.burnAll(liquidityProvider.address);
-    await yToken.connect(liquidityProvider).unstake(await yToken.balanceOf(liquidityProvider.address));
+    await yToken
+      .connect(liquidityProvider)
+      .unstake(await yToken.balanceOf(liquidityProvider.address));
   }
 
   async function lpBalance() {
@@ -187,7 +191,7 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
     amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
-    await yToken.connect(trader).stake({value:amountIn});
+    await yToken.connect(trader).stake({ value: amountIn });
     await yToken.connect(trader).approve(router.address, amountIn);
 
     await router.connect(trader).exactInputSingle({
@@ -228,7 +232,7 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
 
-    await yToken.connect(liquidityProvider).stake({value:amountDesired});
+    await yToken.connect(liquidityProvider).stake({ value: amountDesired });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -274,7 +278,7 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
 
-    await yToken.connect(liquidityProvider).stake({value:amountDesired});
+    await yToken.connect(liquidityProvider).stake({ value: amountDesired });
     await yToken
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -1189,92 +1193,118 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
 
     it("TEST 1) increases total Staking = 10 KLAY", async () => {
       // FIRST, increaseTotal Staking
-      const givenTotalStaking = ethers.utils.parseEther('10');
+      const givenTotalStaking = ethers.utils.parseEther("10");
       await yToken.increaseTotalStaking(givenTotalStaking);
 
       // Test yTokenEarned
-      const yTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
-      expect(givenTotalStaking.mul(9).div(10).sub(yTokenEarned).abs()).to.be.lte(DUST)
+      const yTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
+      expect(
+        givenTotalStaking.mul(9).div(10).sub(yTokenEarned).abs()
+      ).to.be.lte(DUST);
     });
 
     it("TEST 2) increases total Staking = 10 KLAY (liquidityProvider exists another)", async () => {
       // FIRST, increaseTotal Staking
-      await yToken.connect(liquidityProvider).stake({value:ethers.utils.parseEther('100')})
-      const givenTotalStaking = ethers.utils.parseEther('10');
+      await yToken
+        .connect(liquidityProvider)
+        .stake({ value: ethers.utils.parseEther("100") });
+      const givenTotalStaking = ethers.utils.parseEther("10");
       await yToken.increaseTotalStaking(givenTotalStaking);
 
       // Test yTokenEarned
-      const yTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
-      expect(givenTotalStaking.div(2).mul(9).div(10).sub(yTokenEarned).abs()).to.be.lte(DUST)
+      const yTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
+      expect(
+        givenTotalStaking.div(2).mul(9).div(10).sub(yTokenEarned).abs()
+      ).to.be.lte(DUST);
     });
 
     it("TEST 3) mint after increases total Staking = 10 KLAY", async () => {
       // FIRST, increaseTotal Staking
-      await yToken.connect(liquidityProvider).stake({value:ethers.utils.parseEther('100')})
-      const givenTotalStaking = ethers.utils.parseEther('10');
+      await yToken
+        .connect(liquidityProvider)
+        .stake({ value: ethers.utils.parseEther("100") });
+      const givenTotalStaking = ethers.utils.parseEther("10");
       await yToken.increaseTotalStaking(givenTotalStaking);
 
-      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
+      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
 
       // Second, mint new Position
       await mintNewPosition(-10 * TICK_SPACING, -5 * TICK_SPACING, 1);
 
       // Test yTokenEarned
-      const afterYTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
+      const afterYTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
 
-      expect(beforeYTokenEarned).to.be.eq(afterYTokenEarned)
+      expect(beforeYTokenEarned).to.be.eq(afterYTokenEarned);
     });
 
     it("TEST 4) partial burn after increases total Staking = 10 KLAY", async () => {
       // FIRST, increaseTotal Staking
-      await yToken.connect(liquidityProvider).stake({value:ethers.utils.parseEther('100')})
-      const givenTotalStaking = ethers.utils.parseEther('10');
+      await yToken
+        .connect(liquidityProvider)
+        .stake({ value: ethers.utils.parseEther("100") });
+      const givenTotalStaking = ethers.utils.parseEther("10");
       await yToken.increaseTotalStaking(givenTotalStaking);
 
-      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
+      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
 
       // Second, burn partial Position
-      await poolManager.connect(liquidityProvider).burn(
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
           lp.positionId,
           lp.liquidity.div(10),
           liquidityProvider.address,
           0,
           0,
           false
-      )
+        );
       await clearLPBalance();
 
       // Test yTokenEarned
-      const afterYTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
+      const afterYTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
 
-      expect(beforeYTokenEarned).to.be.eq(afterYTokenEarned)
+      expect(beforeYTokenEarned).to.be.eq(afterYTokenEarned);
     });
 
     it("TEST 5) partial burn and collect after increases total Staking = 10 KLAY", async () => {
       // FIRST, increaseTotal Staking
-      await yToken.connect(liquidityProvider).stake({value:ethers.utils.parseEther('100')})
-      const givenTotalStaking = ethers.utils.parseEther('10');
+      await yToken
+        .connect(liquidityProvider)
+        .stake({ value: ethers.utils.parseEther("100") });
+      const givenTotalStaking = ethers.utils.parseEther("10");
       await yToken.increaseTotalStaking(givenTotalStaking);
 
-      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId)).token1amount;
+      const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId))
+        .token1amount;
 
       // Second, burn partial Position
-      await poolManager.connect(liquidityProvider).burn(
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
           lp.positionId,
           lp.liquidity.div(10),
           liquidityProvider.address,
           0,
           0,
           false
-      )
+        );
       await clearLPBalance();
 
       // Test yTokenEarned
-      (await poolManager.connect(liquidityProvider).collect(lp.positionId, liquidityProvider.address, false));
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp.positionId, liquidityProvider.address, false);
 
-      expect(beforeYTokenEarned).to.be.eq(await yToken.balanceOf(liquidityProvider.address))
+      expect(beforeYTokenEarned).to.be.eq(
+        await yToken.balanceOf(liquidityProvider.address)
+      );
     });
-
   });
 
   describe("# FEE DISTRIBUTION AFTER PROTOCOL FEE RECEIVER CASE", async () => {

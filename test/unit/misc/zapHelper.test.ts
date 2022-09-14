@@ -1,4 +1,4 @@
-import {ethers, network} from "hardhat";
+import { ethers, network } from "hardhat";
 import {
   ConcentratedLiquidityPool,
   ConcentratedLiquidityPoolFactory,
@@ -10,11 +10,11 @@ import {
   WETH10,
   ZapHelper,
 } from "../../../types";
-import {BigNumber, BigNumberish} from "ethers";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {getDx, getDy, getPriceAtTick, sortTokens} from "../../harness/utils";
-import {expect} from "chai";
-import {Pangea} from "../../harness/pangea";
+import { BigNumber, BigNumberish } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
+import { expect } from "chai";
+import { Pangea } from "../../harness/pangea";
 
 describe("ZAP:HELPER", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
@@ -58,7 +58,7 @@ describe("ZAP:HELPER", function () {
     swapHelper = pangea.swapHelper;
 
     const ZapHelper = await ethers.getContractFactory("ZapHelper");
-    zapHelper = await ZapHelper.deploy() as ZapHelper;
+    zapHelper = (await ZapHelper.deploy()) as ZapHelper;
 
     // ======== TOKENS ==========
     const Token = await ethers.getContractFactory("ERC20Test");
@@ -68,71 +68,71 @@ describe("ZAP:HELPER", function () {
 
     // ======== DEPLOY POOL ========
     await poolFactory.setAvailableFeeAndTickSpacing(
-        SWAP_FEE,
-        TICK_SPACING,
-        true
+      SWAP_FEE,
+      TICK_SPACING,
+      true
     );
     await masterDeployer.deployPool(
-        poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      poolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     const [tokenN0, tokenN1] =
-        token0.address.toLowerCase() < wklay.address.toLowerCase()
-            ? [token0.address, wklay.address]
-            : [wklay.address, token0.address];
+      token0.address.toLowerCase() < wklay.address.toLowerCase()
+        ? [token0.address, wklay.address]
+        : [wklay.address, token0.address];
     await masterDeployer.deployPool(
-        poolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "uint24", "uint160", "uint24", "address"],
-            [
-              tokenN0,
-              tokenN1,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-              ethers.constants.AddressZero,
-            ]
-        )
+      poolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint24", "uint160", "uint24", "address"],
+        [
+          tokenN0,
+          tokenN1,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+          ethers.constants.AddressZero,
+        ]
+      )
     );
 
     const poolAddress = (
-        await poolFactory.getPools(token0.address, token1.address, 0, 1)
+      await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<ConcentratedLiquidityPool>(
-        "ConcentratedLiquidityPool",
-        poolAddress
+      "ConcentratedLiquidityPool",
+      poolAddress
     );
 
     const nativePoolAddress = (
-        await poolFactory.getPools(token0.address, wklay.address, 0, 1)
+      await poolFactory.getPools(token0.address, wklay.address, 0, 1)
     )[0];
     nativePool = await ethers.getContractAt<ConcentratedLiquidityPool>(
-        "ConcentratedLiquidityPool",
-        nativePoolAddress
+      "ConcentratedLiquidityPool",
+      nativePoolAddress
     );
 
     await token0
-        .connect(trader)
-        .mint(trader.address, ethers.constants.MaxUint256.div(2));
+      .connect(trader)
+      .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token0
-        .connect(trader)
-        .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .connect(trader)
+      .approve(router.address, ethers.constants.MaxUint256.div(2));
     await token1
-        .connect(trader)
-        .mint(trader.address, ethers.constants.MaxUint256.div(2));
+      .connect(trader)
+      .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token1
-        .connect(trader)
-        .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .connect(trader)
+      .approve(router.address, ethers.constants.MaxUint256.div(2));
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -148,8 +148,8 @@ describe("ZAP:HELPER", function () {
   });
 
   async function swapToken0ToToken1(
-      amountIn: BigNumber,
-      amountOutMinimum: BigNumber
+    amountIn: BigNumber,
+    amountOutMinimum: BigNumber
   ) {
     return await router.connect(trader).callStatic.exactInputSingle({
       tokenIn: token0.address,
@@ -162,8 +162,8 @@ describe("ZAP:HELPER", function () {
   }
 
   async function swapToken1ToToken0(
-      amountIn: BigNumber,
-      amountOutMinimum: BigNumber
+    amountIn: BigNumber,
+    amountOutMinimum: BigNumber
   ) {
     // For test, trader always mint token
     await token1.connect(trader).mint(trader.address, amountIn);
@@ -183,62 +183,62 @@ describe("ZAP:HELPER", function () {
     const amount0Desired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amount0Desired.mul(4));
     await token0
-        .connect(liquidityProvider)
-        .approve(poolManager.address, amount0Desired.mul(4));
+      .connect(liquidityProvider)
+      .approve(poolManager.address, amount0Desired.mul(4));
 
     const amount1Desired = ethers.utils.parseEther("100");
     await token1.mint(liquidityProvider.address, amount1Desired.mul(4));
     await token1
-        .connect(liquidityProvider)
-        .approve(poolManager.address, amount1Desired.mul(4));
+      .connect(liquidityProvider)
+      .approve(poolManager.address, amount1Desired.mul(4));
     await poolManager
-        .connect(liquidityProvider)
-        .mint(
-            pool.address,
-            lowerTick,
-            lowerTick,
-            upperTick,
-            upperTick,
-            amount0Desired,
-            amount1Desired,
-            0,
-            0
-        );
+      .connect(liquidityProvider)
+      .mint(
+        pool.address,
+        lowerTick,
+        lowerTick,
+        upperTick,
+        upperTick,
+        amount0Desired,
+        amount1Desired,
+        0,
+        0
+      );
   }
 
   async function addLiquidityNative(lowerTick: number, upperTick: number) {
     const amountDesired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amountDesired);
     await token0
-        .connect(liquidityProvider)
-        .approve(poolManager.address, amountDesired);
+      .connect(liquidityProvider)
+      .approve(poolManager.address, amountDesired);
 
     await poolManager
-        .connect(liquidityProvider)
-        .mintNative(
-            nativePool.address,
-            lowerTick,
-            lowerTick,
-            upperTick,
-            upperTick,
-            amountDesired,
-            0,
-            0,
-            {value: amountDesired}
-        );
+      .connect(liquidityProvider)
+      .mintNative(
+        nativePool.address,
+        lowerTick,
+        lowerTick,
+        upperTick,
+        upperTick,
+        amountDesired,
+        0,
+        0,
+        { value: amountDesired }
+      );
   }
 
   async function burnLiquidityAll(positionId: BigNumberish) {
     await poolManager
-        .connect(liquidityProvider)
-        .burn(
-            positionId,
-            BigNumber.from(2).pow(100),
-            liquidityProvider.address,
-            0,
-            0,
-            false
-        );
+      .connect(liquidityProvider)
+      .burn(
+        positionId,
+        BigNumber.from(2).pow(100),
+        liquidityProvider.address,
+        0,
+        0,
+        false
+      );
   }
 
   /*
@@ -274,24 +274,24 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-2 * TICK_SPACING);
       const inputAmount = await getDx(
-          liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token0.address,
-          inputAmount
+        pool.address,
+        token0.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
-      expect(result.zeroForOne).to.be.true
-      expect(result.amount0.sub(inputAmount).abs()).to.be.lt(DUST)
-      expect(result.amount1.sub(outputAmount).abs()).to.be.lt(DUST)
+      expect(result.zeroForOne).to.be.true;
+      expect(result.amount0.sub(inputAmount).abs()).to.be.lt(DUST);
+      expect(result.amount1.sub(outputAmount).abs()).to.be.lt(DUST);
     });
 
     it("TEST 2)", async () => {
@@ -299,24 +299,24 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-4 * TICK_SPACING);
       const inputAmount = await getDx(
-          liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token0.address,
-          inputAmount
+        pool.address,
+        token0.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
-      expect(result.zeroForOne).to.be.true
-      expect(result.amount0.sub(inputAmount).abs()).to.be.lt(DUST)
-      expect(result.amount1.sub(outputAmount).abs()).to.be.lt(DUST)
+      expect(result.zeroForOne).to.be.true;
+      expect(result.amount0.sub(inputAmount).abs()).to.be.lt(DUST);
+      expect(result.amount1.sub(outputAmount).abs()).to.be.lt(DUST);
     });
 
     it("TEST 3)", async () => {
@@ -324,24 +324,24 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(2 * TICK_SPACING);
       const inputAmount = await getDy(
-          liquidity,
-          currentPrice,
-          targetPrice,
-          true
+        liquidity,
+        currentPrice,
+        targetPrice,
+        true
       );
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token1.address,
-          inputAmount
+        pool.address,
+        token1.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
-      expect(result.zeroForOne).to.be.false
-      expect(result.amount0.sub(outputAmount).abs()).to.be.lt(DUST)
-      expect(result.amount1.sub(inputAmount).abs()).to.be.lt(DUST)
+      expect(result.zeroForOne).to.be.false;
+      expect(result.amount0.sub(outputAmount).abs()).to.be.lt(DUST);
+      expect(result.amount1.sub(inputAmount).abs()).to.be.lt(DUST);
     });
 
     it("TEST 4)", async () => {
@@ -349,24 +349,24 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(3 * TICK_SPACING);
       const inputAmount = await getDy(
-          liquidity,
-          currentPrice,
-          targetPrice,
-          true
+        liquidity,
+        currentPrice,
+        targetPrice,
+        true
       );
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token1.address,
-          inputAmount
+        pool.address,
+        token1.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
-      expect(result.zeroForOne).to.be.false
-      expect(result.amount0.sub(outputAmount).abs()).to.be.lt(DUST)
-      expect(result.amount1.sub(inputAmount).abs()).to.be.lt(DUST)
+      expect(result.zeroForOne).to.be.false;
+      expect(result.amount0.sub(outputAmount).abs()).to.be.lt(DUST);
+      expect(result.amount1.sub(inputAmount).abs()).to.be.lt(DUST);
     });
   });
 
@@ -407,32 +407,32 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-8 * TICK_SPACING);
       const spanDx1 = await getDx(
-          lp1,
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
+        lp1,
+        await getPriceAtTick(-4 * TICK_SPACING),
+        currentPrice,
+        true
       );
       const spanDx2 = await getDx(
-          lp2,
-          targetPrice,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          true
+        lp2,
+        targetPrice,
+        await getPriceAtTick(-7 * TICK_SPACING),
+        true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token0.address,
-          inputAmount
+        pool.address,
+        token0.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
 
-      expect(result.zeroForOne).to.be.eq(true)
-      expect(result.amount0.sub(inputAmount).abs()).to.be.lte(DUST)
-      expect(result.amount1.sub(outputAmount).abs()).to.be.lte(DUST)
+      expect(result.zeroForOne).to.be.eq(true);
+      expect(result.amount0.sub(inputAmount).abs()).to.be.lte(DUST);
+      expect(result.amount1.sub(outputAmount).abs()).to.be.lte(DUST);
     });
 
     it("TEST 2)", async () => {
@@ -440,32 +440,32 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(7 * TICK_SPACING);
       const spanDx1 = await getDy(
-          lp1,
-          currentPrice,
-          await getPriceAtTick(3 * TICK_SPACING),
-          true
+        lp1,
+        currentPrice,
+        await getPriceAtTick(3 * TICK_SPACING),
+        true
       );
       const spanDx2 = await getDy(
-          lp3,
-          await getPriceAtTick(6 * TICK_SPACING),
-          targetPrice,
-          true
+        lp3,
+        await getPriceAtTick(6 * TICK_SPACING),
+        targetPrice,
+        true
       );
       const inputAmount = spanDx1.add(spanDx2);
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token1.address,
-          inputAmount
+        pool.address,
+        token1.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
       const result = await zapHelper.expectAmount(pool.address, targetPrice);
 
-      expect(result.zeroForOne).to.be.eq(false)
-      expect(result.amount0.sub(outputAmount).abs()).to.be.lte(DUST)
-      expect(result.amount1.sub(inputAmount).abs()).to.be.lte(DUST)
+      expect(result.zeroForOne).to.be.eq(false);
+      expect(result.amount0.sub(outputAmount).abs()).to.be.lte(DUST);
+      expect(result.amount1.sub(inputAmount).abs()).to.be.lte(DUST);
     });
   });
 
@@ -510,30 +510,30 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-8 * TICK_SPACING);
       const spanDx1 = await getDx(
-          lp1.add(lp2),
-          await getPriceAtTick(-4 * TICK_SPACING),
-          currentPrice,
-          true
+        lp1.add(lp2),
+        await getPriceAtTick(-4 * TICK_SPACING),
+        currentPrice,
+        true
       );
       const spanDx2 = await getDx(
-          lp2,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          await getPriceAtTick(-4 * TICK_SPACING),
-          true
+        lp2,
+        await getPriceAtTick(-7 * TICK_SPACING),
+        await getPriceAtTick(-4 * TICK_SPACING),
+        true
       );
       const spanDx3 = await getDx(
-          lp2.add(lp3),
-          targetPrice,
-          await getPriceAtTick(-7 * TICK_SPACING),
-          true
+        lp2.add(lp3),
+        targetPrice,
+        await getPriceAtTick(-7 * TICK_SPACING),
+        true
       );
       const inputAmount = spanDx1.add(spanDx2).add(spanDx3);
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token0.address,
-          inputAmount
+        pool.address,
+        token0.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
@@ -548,37 +548,37 @@ describe("ZAP:HELPER", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(9 * TICK_SPACING);
       const spanDx1 = await getDy(
-          lp1.add(lp2),
-          currentPrice,
-          await getPriceAtTick(3 * TICK_SPACING),
-          true
+        lp1.add(lp2),
+        currentPrice,
+        await getPriceAtTick(3 * TICK_SPACING),
+        true
       );
       const spanDx2 = await getDy(
-          lp2,
-          await getPriceAtTick(3 * TICK_SPACING),
-          await getPriceAtTick(6 * TICK_SPACING),
-          true
+        lp2,
+        await getPriceAtTick(3 * TICK_SPACING),
+        await getPriceAtTick(6 * TICK_SPACING),
+        true
       );
       const spanDx3 = await getDy(
-          lp2.add(lp4),
-          await getPriceAtTick(6 * TICK_SPACING),
-          await getPriceAtTick(7 * TICK_SPACING),
-          true
+        lp2.add(lp4),
+        await getPriceAtTick(6 * TICK_SPACING),
+        await getPriceAtTick(7 * TICK_SPACING),
+        true
       );
       const spanDx4 = await getDy(
-          lp4,
-          await getPriceAtTick(7 * TICK_SPACING),
-          targetPrice,
-          true
+        lp4,
+        await getPriceAtTick(7 * TICK_SPACING),
+        targetPrice,
+        true
       );
 
       const inputAmount = spanDx1.add(spanDx2).add(spanDx3).add(spanDx4);
 
       // WHEN
       const exactInputSingle = await swapHelper.calculateExactInputSingle(
-          pool.address,
-          token1.address,
-          inputAmount
+        pool.address,
+        token1.address,
+        inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
 
