@@ -16,7 +16,7 @@ const deployFunction: DeployFunction = async function ({
   const masterDeployer = await ethers.getContract("MasterDeployer");
   const poolLogger = await ethers.getContract("PoolLogger");
   // For Test, (stKLAY)
-  const yieldToken = "0x8B1b66d640e40FcA2EcF030f611261B70D83767a";
+  const yieldToken = "0x675433Ac642EA193A260D82777C2eC22e22482c2";
 
   const {address: RewardTicks} = await deploy("RewardTicks", {
     from: deployer,

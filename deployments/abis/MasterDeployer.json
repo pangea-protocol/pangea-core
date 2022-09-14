@@ -280,34 +280,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "factory",
-        "type": "address"
-      },
-      {
-        "internalType": "uint24",
-        "name": "fee",
-        "type": "uint24"
-      },
-      {
-        "internalType": "uint24",
-        "name": "tickSpacing",
-        "type": "uint24"
-      },
-      {
-        "internalType": "bool",
-        "name": "ok",
-        "type": "bool"
-      }
-    ],
-    "name": "setAvailableFeeAndTickSpacing",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
         "name": "_protocolFeeTo",
         "type": "address"
       }

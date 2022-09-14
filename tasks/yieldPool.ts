@@ -1,8 +1,22 @@
 import { task } from "hardhat/config";
-import {MasterDeployer, YieldPoolFactory} from "../types";
-import {ethers} from "hardhat";
+import {IERC20Metadata__factory, MasterDeployer, YieldPoolFactory} from "../types";
 import {BigNumber} from "ethers";
 import {doTransaction} from "../deploy/utils";
+
+task("yieldPool:whitelist", "delete Pool")
+    .setAction(async ({},{ethers})=> {
+      const [deployer] = await ethers.getSigners();
+
+      const masterDeployer = await ethers.getContract('MasterDeployer') as MasterDeployer;
+      const yieldPoolFactory = await ethers.getContract("YieldPoolFactory") as YieldPoolFactory;
+
+      if ((await masterDeployer.connect(deployer).whitelistedFactories(yieldPoolFactory.address))) {
+        await doTransaction(masterDeployer.connect(deployer).removeFromWhitelistFactory(yieldPoolFactory.address));
+      }
+
+      console.log(await masterDeployer.connect(deployer).whitelistedFactories(yieldPoolFactory.address));
+    })
+
 
 task("yieldPool:create", "current timestamp")
     .addPositionalParam('token')
@@ -18,6 +32,8 @@ task("yieldPool:create", "current timestamp")
           const yieldPoolFactory = await ethers.getContract("YieldPoolFactory") as YieldPoolFactory;
 
           const yieldToken = await yieldPoolFactory.yieldToken();
+          const tokenContract = await IERC20Metadata__factory.connect(token, ethers.provider);
+          const yieldTokenContract = await IERC20Metadata__factory.connect(yieldToken, ethers.provider);
 
           let token0Address;
           let token1Address;
@@ -25,11 +41,17 @@ task("yieldPool:create", "current timestamp")
           if (token.toLowerCase() < yieldToken.toLowerCase()) {
                 token0Address = token;
                 token1Address = yieldToken;
-                price = calculatePrice(tokenAmount, yieldTokenAmount)
+                price = calculatePrice(
+                    ethers.utils.parseUnits(tokenAmount, await tokenContract.decimals()),
+                    ethers.utils.parseUnits(yieldTokenAmount, await yieldTokenContract.decimals())
+                );
           } else {
                 token0Address = yieldToken;
                 token1Address = token;
-                price = calculatePrice(yieldTokenAmount, tokenAmount)
+                price = calculatePrice(
+                    ethers.utils.parseUnits(yieldTokenAmount, await yieldTokenContract.decimals()),
+                    ethers.utils.parseUnits(tokenAmount, await tokenContract.decimals()),
+                );
           }
 
           await doTransaction(yieldPoolFactory.connect(deployer).setAvailableParameter(
@@ -52,17 +74,16 @@ task("yieldPool:create", "current timestamp")
     });
 
 
-function calculatePrice(amount0, amount1) {
-      return sqrtValue(BigNumber.from(amount1).mul(BigNumber.from(2).pow(192)).div(BigNumber.from(amount0)))
+function calculatePrice(amount0:BigNumber, amount1:BigNumber) {
+      return sqrtValue(amount1.mul(BigNumber.from(2).pow(192)).div(amount0))
 }
 
 
 function sqrtValue(value) {
-      const {ethers} = require('hardhat');
-      const ONE = ethers.BigNumber.from(1);
-      const TWO = ethers.BigNumber.from(2);
+      const ONE = BigNumber.from(1);
+      const TWO = BigNumber.from(2);
 
-      let x = ethers.BigNumber.from(value);
+      let x = BigNumber.from(value);
       let z = x.add(ONE).div(TWO);
       let y = x;
       while (z.sub(y).isNegative()) {
