@@ -24,6 +24,11 @@ import "../libraries/SafeCast.sol";
 import "../interfaces/IAirdropDistributor.sol";
 import "../interfaces/IAirdropPool.sol";
 
+/**
+ * DEPRECATED CONTRACT!
+ * USE AirdropDistributorV2
+ */
+
 // @notice Airdrop Token distribution Contract for Liquidity Provider
 contract AirdropDistributor is IAirdropDistributor, Initializable {
     using SafeERC20 for IERC20;
