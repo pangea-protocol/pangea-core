@@ -641,15 +641,6 @@ describe("YieldPool TEST", function () {
       const givenReward = ethers.utils.parseEther("12");
       await stKLAY.increaseTotalStaking(givenReward)
 
-      {
-        const lp1Reward = await poolManager
-            .connect(liquidityProvider)
-            .positionFees(lp1.positionId);
-
-        console.log(`${lp1Reward.token0amount}`)
-        console.log(`${lp1Reward.token1amount}`)
-      }
-
       // [2] 스왑 처리
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-6 * TICK_SPACING);
@@ -666,15 +657,6 @@ describe("YieldPool TEST", function () {
         await swapKLAY2stKLAY(inputAmount);
       } else {
         await swapstKLAY2KLAY(inputAmount);
-      }
-
-      {
-        const lp1Reward = await poolManager
-            .connect(liquidityProvider)
-            .positionFees(lp1.positionId);
-
-        console.log(`${lp1Reward.token0amount}`)
-        console.log(`${lp1Reward.token1amount}`)
       }
 
       await clearBalance();
@@ -699,8 +681,6 @@ describe("YieldPool TEST", function () {
         expect(lp1Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
         expect(lp2Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
       } else {
-        console.log(`${lp1Reward.token0amount}`)
-        console.log(`${lp2Reward.token0amount}`)
         expect(lp1Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
         expect(lp2Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
       }

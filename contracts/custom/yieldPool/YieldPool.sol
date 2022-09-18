@@ -155,7 +155,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         bool _zeroForYield = zeroForYield;
         _updateYield(_zeroForYield);
         _;
-        _updateShare(_zeroForYield);
+        _updateShareAndYBalance(_zeroForYield);
     }
 
     function initialize(bytes memory _deployData, address _masterDeployer) external initializer {
@@ -1160,9 +1160,16 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         return _accumulativeYield + pendingYield + yBalance - _reserve;
     }
 
-    function _updateShare(bool _zeroForYield) internal {
-        address token = _zeroForYield ? token0 : token1;
-        shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+    function _updateShareAndYBalance(bool _zeroForYield) internal {
+        if (_zeroForYield) {
+            address token = token0;
+            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+            reserve0 = uint128(IYieldToken(token).balanceOf(address(this)));
+        } else {
+            address token = token1;
+            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+            reserve1 = uint128(IYieldToken(token).balanceOf(address(this)));
+        }
     }
 
     function _getYieldBalance(bool _zeroForYield) internal view returns (uint128) {
