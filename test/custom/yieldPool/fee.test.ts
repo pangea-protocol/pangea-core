@@ -32,7 +32,7 @@ import { FakeContract, smock } from "@defi-wonderland/smock";
  * [5] Does it operate normally when the price impact occurs up to the end price of the pool?
  *
  */
-describe.only("Yield Pool SCENARIO:FEE", function () {
+describe("Yield Pool SCENARIO:FEE", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_BASE = 1000000;
   const SWAP_FEE = 2000; // 0.2%
@@ -1177,7 +1177,7 @@ describe.only("Yield Pool SCENARIO:FEE", function () {
     });
   });
 
-  describe.only("# FEE DISTRIBUTION WITH YIELD CASE", async () => {
+  describe("# FEE DISTRIBUTION WITH YIELD CASE", async () => {
     let lp: LPInfo;
 
     /*

@@ -116,7 +116,7 @@ describe("Y Token TEST", function () {
     ]);
 
     // THEN
-    expect(before1.sub(after1)).to.be.eq(transferAmount);
+    expect(before1.sub(after1).sub(transferAmount).abs()).to.be.lte(1);
     expect(after2.sub(before2)).to.be.eq(transferAmount);
   });
 
@@ -271,13 +271,11 @@ describe("Y Token TEST", function () {
      * [2] user1이 user2에게 ( 0 ~ 0.001 KLAY 랜덤 값으로)
      */
     // GIVEN
-    await yToken
-      .connect(user1)
-      .stake({
-        value: randomBN(ethers.utils.parseEther("1000")).add(
-          ethers.utils.parseEther("1")
-        ),
-      });
+    await yToken.connect(user1).stake({
+      value: randomBN(ethers.utils.parseEther("1000")).add(
+        ethers.utils.parseEther("1")
+      ),
+    });
     await yToken.increaseTotalStaking(randomBN(ethers.utils.parseEther("10")));
     await yToken
       .connect(user2)

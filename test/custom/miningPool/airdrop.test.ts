@@ -255,7 +255,7 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
     };
   }
 
-  describe("# depositAirdrop", async () => {
+  describe("# depositAirdropAndReward", async () => {
     let lp: LPInfo;
 
     beforeEach("create position", async () => {
@@ -275,9 +275,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       await expect(
         pool
           .connect(airdrop)
-          .depositAirdrop(
+          .depositAirdropAndReward(
             givenAirdrop0,
             givenAirdrop1,
+            0,
             givenAirdropStartTime,
             givenAirdropPeriod
           )
@@ -295,9 +296,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       // WHEN
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -306,9 +308,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       await expect(
         pool
           .connect(airdrop)
-          .depositAirdrop(
+          .depositAirdropAndReward(
             givenAirdrop0,
             givenAirdrop1,
+            0,
             givenAirdropStartTime + givenAirdropPeriod - 1,
             givenAirdropPeriod
           )
@@ -326,9 +329,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       await expect(
         pool
           .connect(trader)
-          .depositAirdrop(
+          .depositAirdropAndReward(
             givenAirdrop0,
             givenAirdrop1,
+            0,
             givenAirdropStartTime,
             givenAirdropPeriod
           )
@@ -345,9 +349,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       // WHEN
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -374,16 +379,18 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       // WHEN
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod + 1);
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
+          0,
           0,
           0,
           givenAirdropStartTime + givenAirdropPeriod,
@@ -433,9 +440,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -457,9 +465,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -511,9 +520,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -538,9 +548,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -572,9 +583,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -609,9 +621,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -655,9 +668,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -698,9 +712,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -749,9 +764,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -791,9 +807,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -859,9 +876,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -902,9 +920,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -989,9 +1008,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -1056,9 +1076,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -1099,9 +1120,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );
@@ -1186,9 +1208,10 @@ describe("Reward Liquidity Pool SCENARIO:AIRDROP", function () {
       const givenAirdrop1 = ethers.utils.parseEther("34");
       await pool
         .connect(airdrop)
-        .depositAirdrop(
+        .depositAirdropAndReward(
           givenAirdrop0,
           givenAirdrop1,
+          0,
           givenAirdropStartTime,
           givenAirdropPeriod
         );

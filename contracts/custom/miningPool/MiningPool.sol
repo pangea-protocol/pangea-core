@@ -36,7 +36,7 @@ import "../common/libraries/RewardTicks.sol";
 import "./interfaces/IMiningPoolStruct.sol";
 
 /// @notice Custom Pool : Mining pool, it's for liquidity mining using reward token
-contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee, Initializable {
+contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPRewardCallee, Initializable {
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -87,7 +87,7 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     /// @dev reward fee growth counters are multiplied by 2 ^ 128.
     uint256 internal rewardGrowthGlobal_;
     uint256 public rewardPerSecond;
-    /// @dev amount of the deposited reward, it'll be distributed on next airdrop epoch
+    /// @dev deprecated fields...
     uint128 public depositedReward;
 
     uint128 internal token0ProtocolFee;
@@ -600,24 +600,21 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         return (amount0, amount1);
     }
 
-    /// @dev deposit Airdrop tokens. This Airdrop will be provided to the LP with the swap Fee for a given period
+    /// @dev deposit Airdrop tokens & Rewards
     /// @param airdrop0   amount of token0 to deposit
     /// @param airdrop1   amount of token1 to deposit
+    /// @param reward     amount of reward to deposit
     /// @param startTime  Airdrop distribution start time
     /// @param period     Airdrop distribution period
-    function depositAirdrop(
+    function depositAirdropAndReward(
         uint128 airdrop0,
         uint128 airdrop1,
+        uint128 reward,
         uint256 startTime,
         uint256 period
     ) external lock {
         if (masterDeployer.airdropDistributor() != msg.sender) revert NotAuthorized();
         if (startTime + period <= block.timestamp) revert InvalidParam();
-
-        uint128 reward = depositedReward;
-        depositedReward = 0;
-
-        if (reward > 0) emit DistributeReward(rewardToken, reward, startTime, period);
 
         // not allowed before the previous airdrop is ended
         uint256 _airdropStartTime = airdropStartTime;
@@ -632,6 +629,9 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         if (airdrop1 > 0) {
             _transferFromMsgSender(token1, airdrop1);
             reserve1 += airdrop1;
+        }
+        if (reward > 0) {
+            _transferFromMsgSender(rewardToken, reward);
         }
 
         // distribute previous epoch airdrop if exist
@@ -656,14 +656,6 @@ contract MiningPool is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         rewardPerSecond = FullMath.mulDiv(reward, FixedPoint.Q128, period);
         airdropStartTime = startTime;
         airdropPeriod = period;
-    }
-
-    /// @dev deposit Reward Token. msg.sender should approve the amount of reward token.
-    //       This will be distributed at the next airdrop.
-    /// @param amount amount of reward to deposit
-    function depositReward(uint128 amount) external {
-        _transferFromMsgSender(rewardToken, amount);
-        depositedReward += amount;
     }
 
     function _ensureTickSpacing(int24 lower, int24 upper) internal view {
