@@ -510,13 +510,16 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         uint256 cachedRewardGrowthGlobal,
         bool zeroForOne
     ) internal {
+        uint256 _yieldGrowthGlobal0 = zeroForYield ? _yieldGrowthGlobal : 0;
+        uint256 _yieldGrowthGlobal1 = zeroForYield ? 0 : _yieldGrowthGlobal;
+
         (cache.currentLiquidity, cache.nextTickToCross) = ticks.cross(
             rewardGrowthOutsidePerTicks,
             cache.nextTickToCross,
             secondsGrowthGlobal,
             cache.currentLiquidity,
-            zeroForOne ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0,
-            zeroForOne ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1,
+            zeroForOne ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 + _yieldGrowthGlobal1 : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0 + _yieldGrowthGlobal0,
+            zeroForOne ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 + _yieldGrowthGlobal0 : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1 + _yieldGrowthGlobal1,
             cachedRewardGrowthGlobal,
             zeroForOne,
             tickSpacing
