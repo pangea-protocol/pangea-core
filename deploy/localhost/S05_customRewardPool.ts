@@ -1,7 +1,7 @@
 import {DeployFunction} from "hardhat-deploy/types";
 import {HardhatRuntimeEnvironment} from "hardhat/types";
 import {
-  AirdropDistributor, AirdropDistributorV2,
+  AirdropDistributorV2,
   ConcentratedLiquidityPoolHelper,
   ERC20Test,
   KDAI,
@@ -40,7 +40,7 @@ const deployFunction: DeployFunction = async function (
   const poolLogger = await ethers.getContract("PoolLogger");
   const weth = await ethers.getContract("WETH10");
   const tickIndex = await ethers.getContract<TickIndex>("TickIndex");
-  const airdropDistributorV2 = await ethers.getContract<AirdropDistributorV2>("AirdropDistributorV2");
+  const airdropDistributor = await ethers.getContract<AirdropDistributorV2>("AirdropDistributorV2");
 
   const {address: RewardTicks} = await deploy("RewardTicks", {
     from: deployer.address,
@@ -223,21 +223,19 @@ const deployFunction: DeployFunction = async function (
   }
 
   console.log("REWARD DEPOSIT TO REWARD LIQUIDITY POOL")
-  const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributor")
-
   const mintAndAirdrop = async (poolAddress: string, amount: BigNumberish) => {
     const pool = await ethers.getContractAt("MiningPool", poolAddress) as MiningPool;
     const tokenAddress = (await pool.rewardToken())
     if (tokenAddress == WKLAY.address) {
       amount = ethers.utils.parseEther(amount.toString())
-      await doTransaction(airdropDistributorV2.connect(deployer).depositKlay(pool.address, {value:amount}));
+      await doTransaction(airdropDistributor.connect(deployer).depositKlay(pool.address, {value:amount}));
     } else {
       const token = await ethers.getContractAt('ERC20Test', tokenAddress) as ERC20Test
       amount = ethers.utils.parseUnits(amount.toString(), await token.decimals())
 
       await doTransaction(token.connect(deployer).mint(deployer.address, amount))
-      await doTransaction(token.connect(deployer).approve(airdropDistributorV2.address, amount))
-      await doTransaction(airdropDistributorV2.connect(deployer).depositToken(pool.address, token.address, amount));
+      await doTransaction(token.connect(deployer).approve(airdropDistributor.address, amount))
+      await doTransaction(airdropDistributor.connect(deployer).depositToken(pool.address, token.address, amount));
     }
   }
 
