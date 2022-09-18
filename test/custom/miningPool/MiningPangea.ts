@@ -3,7 +3,6 @@ import { ContractFactory } from "@ethersproject/contracts";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { ethers } from "hardhat";
 import {
-  AirdropDistributor,
   ERC20Mock,
   MasterDeployer,
   MiningPool,
@@ -33,7 +32,6 @@ export class MiningPangea {
   public poolFactory!: MiningPoolFactory;
   public tickMath!: TickMathMock;
   public swapHelper!: SwapHelper;
-  public airdropDistributor!: AirdropDistributor;
 
   public static get Instance() {
     return this._instance || (this._instance = new this());
@@ -46,7 +44,6 @@ export class MiningPangea {
       WETH10,
       Deployer,
       PoolRouter,
-      AirdropDistributor,
       TickMath,
       TickIndex,
       RewardTicks,
@@ -56,7 +53,6 @@ export class MiningPangea {
         "WETH10",
         "MasterDeployer",
         "PoolRouter",
-        "AirdropDistributor",
         "TickMathMock",
         "TickIndex",
         "RewardTicks",
@@ -84,7 +80,6 @@ export class MiningPangea {
     await this.deployWETH(WETH10);
     await this.deploySwapHelper(SwapHelper);
     await this.deployPangeaPeriphery(Deployer, PoolRouter);
-    await this.deployAirdropDistributor(AirdropDistributor);
     await this.deployConcentratedPeriphery(
       MiningPool,
       Logger,
@@ -105,15 +100,6 @@ export class MiningPangea {
     this.swapHelper = (await SwapHelper.deploy(
       this.weth.address
     )) as SwapHelper;
-  }
-
-  private async deployAirdropDistributor(AirdropDistributor: ContractFactory) {
-    this.airdropDistributor =
-      (await AirdropDistributor.deploy()) as AirdropDistributor;
-    await this.airdropDistributor.initialize(
-      this.masterDeployer.address,
-      this.weth.address
-    );
   }
 
   private async deployPangeaPeriphery(

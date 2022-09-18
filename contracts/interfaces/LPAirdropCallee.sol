@@ -12,7 +12,7 @@ interface LPAirdropCallee {
     ) external;
 }
 
-// @notice It's for ConcentratedLiquidityPool. supports tokens of pool and reward Token
+// @notice It's for MiningPool & YieldPool. supports tokens of pool and reward Token
 interface LPRewardCallee {
     function rewardToken() external view returns (address);
 

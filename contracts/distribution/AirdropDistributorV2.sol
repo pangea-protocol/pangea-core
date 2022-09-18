@@ -15,7 +15,7 @@ pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IConcentratedLiquidityPool.sol";
 import "../interfaces/IMasterDeployer.sol";
 import "../interfaces/IWETH.sol";
@@ -25,7 +25,7 @@ import "../interfaces/IAirdropPool.sol";
 import "../interfaces/IAirdropDistributorV2.sol";
 
 // @notice Airdrop Token distribution Contract for Liquidity Provider
-contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
+contract AirdropDistributorV2 is IAirdropDistributorV2, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     address internal wKLAY;
@@ -47,6 +47,7 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
     function initialize(address _masterDeployer, address _WKLAY) external initializer {
         masterDeployer = IMasterDeployer(_masterDeployer);
         wKLAY = _WKLAY;
+        __Ownable_init();
     }
 
     function epochStartTime() public view returns (uint256) {
@@ -78,7 +79,7 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
         }
     }
 
-    /// @notice airdrop information deposited in the pool. amount0 & amount1 will be zero after airdrop allocation
+    /// @notice airdrop information deposited in the pool
     function depositedAirdrop(address pool)
         external
         view
@@ -101,7 +102,7 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
     /// @dev transaction will revert if the asset in the pool is not WKLAY
     function depositKlay(address pool) external payable NotPhased {
         address token = wKLAY;
-        if (!ableToAirdrop(pool, token)) revert NotAllowedToken();
+        validateToDeposit(pool, token);
 
         uint256 amount = msg.value;
         IWETH(token).deposit{value: amount}();
@@ -119,7 +120,7 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
         address token,
         uint128 amount
     ) external NotPhased {
-        if (!ableToAirdrop(pool, token)) revert NotAllowedToken();
+        validateToDeposit(pool, token);
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         _deposit(pool, token, amount);
@@ -153,20 +154,25 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
 
         for (uint256 i = 0; i < airdropPool.length; i++) {
             address pool = airdropPool[i];
+            if ((IAirdropPool(pool).airdropStartTime() + IAirdropPool(pool).airdropPeriod()) > _epochStartTime) {
+                continue;
+            }
+
             if (airdropStartTimePerPool[pool] <= _epochStartTime) {
                 _distribute(pool);
             }
         }
     }
 
-    function ableToAirdrop(address pool, address token) private view returns (bool) {
+    function validateToDeposit(address pool, address token) internal {
+        if (!masterDeployer.pools(pool)) revert NotExists();
         address[] memory tokens = airdropTokens(pool);
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            if (token == tokens[i]) return true;
+            if (token == tokens[i]) return;
         }
 
-        return false;
+        revert NotAllowedToken();
     }
 
     function _deposit(
@@ -174,8 +180,6 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, Initializable {
         address token,
         uint128 amount
     ) internal {
-        if (!masterDeployer.pools(pool)) revert NotExists();
-
         if (airdropStartTimePerPool[pool] > 0 && airdropStartTimePerPool[pool] <= epochStartTime()) {
             // edge case
             // If the previously deposited assets have not been distributed, distribute them first and deposit.
