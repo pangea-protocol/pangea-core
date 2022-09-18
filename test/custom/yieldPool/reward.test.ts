@@ -12,6 +12,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { getDx, getPriceAtTick } from "../../harness/utils";
 import { expect } from "chai";
 import { YieldPangea } from "./YieldPangea";
+import {removeLiquidityViaManager} from "../../harness/Concentrated";
 
 /***
  * stKLAY/KLAY with KLY 풀에 대한 시나리오 테스트 수행
@@ -23,7 +24,7 @@ import { YieldPangea } from "./YieldPangea";
  * > 유동성을 공급한 포지션이 존재하였을 때, 유동성 크기에 비례하여 stKLAY가 올바르게 분배되는가?
  *
  */
-describe("YieldPool TEST", function () {
+describe.only("YieldPool TEST", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 0;
   const TICK_SPACING = 20;
@@ -631,8 +632,7 @@ describe("YieldPool TEST", function () {
      * 에어드랍 물량의 절반은 LP1에 분배 (절반 시간동안 LP1에 있었기 떄문)
      * 남은 절반은 LP2에 분배
     */
-    it(" 두 포지션에서의 stKLAY 분배", async () => {
-      // 동일한 크기의 두개 포지션을 생성합니다.
+    it("스왑 후, 두 포지션에서의 stKLAY 분배", async () => {
       const lp1 = await mintNewPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
       const lp2 = await mintNewPosition(-10 * TICK_SPACING, -5 * TICK_SPACING, 1);
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
@@ -688,5 +688,30 @@ describe("YieldPool TEST", function () {
       await poolManager.connect(liquidityProvider).collect(lp1.positionId, liquidityProvider.address, false);
       await poolManager.connect(liquidityProvider).collect(lp2.positionId, liquidityProvider.address, false);
     });
+
+    it("생성 소각 반복", async () => {
+      // [1] increaseTotalStaking을 통해 share와 balance의 차이 발생시키기
+      await stKLAY.connect(trader).stake({value:ethers.utils.parseEther("5012.381040013000129")})
+      await stKLAY.increaseTotalStaking(ethers.utils.parseEther("1.1219210370101"))
+
+      for (let i=0; i < 20; i++) {
+        // [2] 포지션 생성
+        let lp1 = await mintNewPosition(-4 * TICK_SPACING, 5 * TICK_SPACING, 1);
+        await clearLPBalance();
+
+        // [3] staking
+        await stKLAY.increaseTotalStaking(randomBN(ethers.utils.parseEther('0.001')));
+
+        // [4] 모두 소각
+        await poolManager.connect(liquidityProvider).burn(lp1.positionId, lp1.liquidity, liquidityProvider.address, 0, 0, false);
+        await clearLPBalance();
+
+        await pool.collectProtocolFee();
+      }
+    });
   });
+
+  function randomBN(max) {
+    return ethers.BigNumber.from(ethers.utils.randomBytes(32)).mod(max);
+  }
 });
