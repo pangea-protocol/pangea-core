@@ -38,6 +38,6 @@ const deployFunction: DeployFunction = async function ({
 
 export default deployFunction;
 
-deployFunction.dependencies = ["MasterDeployer", "WETH10"];
+// deployFunction.dependencies = ["MasterDeployer", "WETH10"];
 
 deployFunction.tags = ["AirdropDistributor", 'deploy'];
