@@ -1,5 +1,5 @@
 import { ethers, network } from "hardhat";
-import { FakeContract, smock } from "@defi-wonderland/smock";
+import { smock } from "@defi-wonderland/smock";
 import {
   ERC20Test,
   WETH10,
@@ -14,12 +14,11 @@ import chai, { expect } from "chai";
 import { describe } from "mocha";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "hardhat-deploy-ethers/signers";
-import {MiningPangea} from "../../custom/miningPool/MiningPangea";
-import {sortTokens} from "../../harness/utils";
-import poolFactory from "../../../deploy/PoolFactory";
+import { MiningPangea } from "../../custom/miningPool/MiningPangea";
+import { sortTokens } from "../../harness/utils";
 chai.use(smock.matchers);
 
-describe.only("AirdropDistributorV2", async () => {
+describe("AirdropDistributorV2", async () => {
   let _snapshotId: string;
   let snapshotId: string;
   const TWO_POW_96 = BigNumber.from(2).pow(96);
@@ -27,7 +26,6 @@ describe.only("AirdropDistributorV2", async () => {
   let WEEK = DAY * 7;
   const SWAP_FEE = 2000;
   const TICK_SPACING = 20;
-
 
   let deployer: SignerWithAddress;
   let trader: SignerWithAddress;
@@ -66,17 +64,25 @@ describe.only("AirdropDistributorV2", async () => {
     airdropDistributor =
       (await AirdropDistributorV2.deploy()) as AirdropDistributorV2;
 
-    await pangea.masterDeployer.setAirdropDistributor(airdropDistributor.address);
-
-    const Ticks = (await (await ethers.getContractFactory("Ticks")).deploy()).address;
-    const PoolFactoryLib = (await (await ethers.getContractFactory("PoolFactoryLib", {
-      libraries: {Ticks}
-    })).deploy()).address
-    const ConcentratedPoolFactory = await ethers.getContractFactory(
-        "ConcentratedLiquidityPoolFactory",
-        { libraries: { PoolFactoryLib } }
+    await pangea.masterDeployer.setAirdropDistributor(
+      airdropDistributor.address
     );
-    factory = await ConcentratedPoolFactory.deploy() as ConcentratedLiquidityPoolFactory
+
+    const Ticks = (await (await ethers.getContractFactory("Ticks")).deploy())
+      .address;
+    const PoolFactoryLib = (
+      await (
+        await ethers.getContractFactory("PoolFactoryLib", {
+          libraries: { Ticks },
+        })
+      ).deploy()
+    ).address;
+    const ConcentratedPoolFactory = await ethers.getContractFactory(
+      "ConcentratedLiquidityPoolFactory",
+      { libraries: { PoolFactoryLib } }
+    );
+    factory =
+      (await ConcentratedPoolFactory.deploy()) as ConcentratedLiquidityPoolFactory;
     await factory.initialize(masterDeployer.address, pangea.poolLogger.address);
     await masterDeployer.addToWhitelistFactory(factory.address);
 
@@ -97,53 +103,56 @@ describe.only("AirdropDistributorV2", async () => {
     [token0, token1] = sortTokens(token0, token1);
 
     await miningPoolFactory.setAvailableParameter(
-        token0.address,
-        token1.address,
-        rewardToken.address,
-        BigNumber.from(SWAP_FEE),
-        BigNumber.from(TICK_SPACING)
+      token0.address,
+      token1.address,
+      rewardToken.address,
+      BigNumber.from(SWAP_FEE),
+      BigNumber.from(TICK_SPACING)
     );
     await masterDeployer.deployPool(
-        miningPoolFactory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              rewardToken.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      miningPoolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          rewardToken.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     await masterDeployer.deployPool(
-        factory.address,
-        ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "uint24", "uint160", "uint24"],
-            [
-              token0.address,
-              token1.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-        )
+      factory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint24", "uint160", "uint24"],
+        [
+          token0.address,
+          token1.address,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+        ]
+      )
     );
 
     {
       const poolAddress = (
-          await miningPoolFactory.getPools(token0.address, token1.address, 0, 1)
+        await miningPoolFactory.getPools(token0.address, token1.address, 0, 1)
       )[0];
       pool0 = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
     }
 
     {
       const poolAddress = (
-          await factory.getPools(token0.address, token1.address, 0, 1)
+        await factory.getPools(token0.address, token1.address, 0, 1)
       )[0];
-      pool1 = await ethers.getContractAt<ConcentratedLiquidityPool>("ConcentratedLiquidityPool", poolAddress);
+      pool1 = await ethers.getContractAt<ConcentratedLiquidityPool>(
+        "ConcentratedLiquidityPool",
+        poolAddress
+      );
     }
 
     await airdropDistributor.initialize(masterDeployer.address, wklay.address);
@@ -167,26 +176,25 @@ describe.only("AirdropDistributorV2", async () => {
   }
 
   describe("# airdropTokens", async () => {
-    beforeEach("setup", async () => {
-    });
+    beforeEach("setup", async () => {});
 
     it("airdropTokens of miningPool", async () => {
       const result = await airdropDistributor.airdropTokens(pool0.address);
 
-      expect(result.length).to.be.eq(3)
-      expect(result[0]).to.be.eq(token0.address)
-      expect(result[1]).to.be.eq(token1.address)
-      expect(result[2]).to.be.eq(rewardToken.address)
-    })
+      expect(result.length).to.be.eq(3);
+      expect(result[0]).to.be.eq(token0.address);
+      expect(result[1]).to.be.eq(token1.address);
+      expect(result[2]).to.be.eq(rewardToken.address);
+    });
 
     it("airdropTokens of concentratedLiquidityPool", async () => {
       const result = await airdropDistributor.airdropTokens(pool1.address);
 
-      expect(result.length).to.be.eq(2)
-      expect(result[0]).to.be.eq(token0.address)
-      expect(result[1]).to.be.eq(token1.address)
-    })
-  })
+      expect(result.length).to.be.eq(2);
+      expect(result[0]).to.be.eq(token0.address);
+      expect(result[1]).to.be.eq(token1.address);
+    });
+  });
 
   describe("# DEPOSIT & AIRDROP SCENARIO", async () => {
     let epochStartTime: number;
@@ -221,8 +229,8 @@ describe.only("AirdropDistributorV2", async () => {
         .connect(deployer)
         .approve(airdropDistributor.address, airdropAmount.mul(10));
       await rewardToken
-          .connect(deployer)
-          .approve(airdropDistributor.address, airdropAmount.mul(10));
+        .connect(deployer)
+        .approve(airdropDistributor.address, airdropAmount.mul(10));
     });
 
     it("revert case) not pool", async () => {
@@ -267,11 +275,11 @@ describe.only("AirdropDistributorV2", async () => {
     it("DEPOSIT token0 twice", async () => {
       // WHEN
       await airdropDistributor
-          .connect(deployer)
-          .depositToken(pool0.address, token0.address, airdropAmount);
+        .connect(deployer)
+        .depositToken(pool0.address, token0.address, airdropAmount);
       await airdropDistributor
-          .connect(deployer)
-          .depositToken(pool0.address, token0.address, airdropAmount);
+        .connect(deployer)
+        .depositToken(pool0.address, token0.address, airdropAmount);
 
       // THEN
       const info = await airdropDistributor.depositedAirdrop(pool0.address);
@@ -291,12 +299,12 @@ describe.only("AirdropDistributorV2", async () => {
     it("DEPOSIT token0 twice at each epoch", async () => {
       // WHEN
       await airdropDistributor
-          .connect(deployer)
-          .depositToken(pool0.address, token0.address, airdropAmount);
+        .connect(deployer)
+        .depositToken(pool0.address, token0.address, airdropAmount);
       await setNextTimeStamp(epochEndTime);
       await airdropDistributor
-          .connect(deployer)
-          .depositToken(pool0.address, token0.address, airdropAmount);
+        .connect(deployer)
+        .depositToken(pool0.address, token0.address, airdropAmount);
 
       // THEN
       const info = await airdropDistributor.depositedAirdrop(pool0.address);
@@ -322,8 +330,8 @@ describe.only("AirdropDistributorV2", async () => {
         .connect(deployer)
         .depositToken(pool0.address, token1.address, airdropAmount.mul(2));
       await airdropDistributor
-          .connect(deployer)
-          .depositToken(pool0.address, rewardToken.address, airdropAmount.mul(3));
+        .connect(deployer)
+        .depositToken(pool0.address, rewardToken.address, airdropAmount.mul(3));
 
       // THEN
       const info = await airdropDistributor.depositedAirdrop(pool0.address);
@@ -344,8 +352,12 @@ describe.only("AirdropDistributorV2", async () => {
       await airdropDistributor.airdropAll();
 
       expect(await token0.balanceOf(pool0.address)).to.be.eq(airdropAmount);
-      expect(await token1.balanceOf(pool0.address)).to.be.eq(airdropAmount.mul(2));
-      expect(await rewardToken.balanceOf(pool0.address)).to.be.eq(airdropAmount.mul(3));
+      expect(await token1.balanceOf(pool0.address)).to.be.eq(
+        airdropAmount.mul(2)
+      );
+      expect(await rewardToken.balanceOf(pool0.address)).to.be.eq(
+        airdropAmount.mul(3)
+      );
     });
   });
 });
