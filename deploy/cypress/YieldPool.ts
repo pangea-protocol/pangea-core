@@ -9,7 +9,7 @@ const deployFunction: DeployFunction = async function ({
                                                          ethers,
                                                          network,
                                                        }: HardhatRuntimeEnvironment) {
-  if (network.name !== 'baobab') return;
+  if (network.name !== 'cypress') return;
 
   const {deploy} = deployments;
   const {deployer, dev} = await getNamedAccounts();
@@ -17,7 +17,7 @@ const deployFunction: DeployFunction = async function ({
   const poolLogger = await ethers.getContract("PoolLogger");
 
   // For Test, (stKLAY)
-  const yieldToken = "0x675433Ac642EA193A260D82777C2eC22e22482c2";
+  const yieldToken = "0xF80F2b22932fCEC6189b9153aA18662b15CC9C00";
 
   const {address: RewardTicks} = await deploy("RewardTicks", {
     from: deployer,
