@@ -23,7 +23,7 @@ import { YieldPangea } from "./YieldPangea";
  * > 유동성을 공급한 포지션이 존재하였을 때, 유동성 크기에 비례하여 stKLAY가 올바르게 분배되는가?
  *
  */
-describe.only("YieldPool TEST", function () {
+describe("YieldPool TEST", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 0;
   const TICK_SPACING = 20;
