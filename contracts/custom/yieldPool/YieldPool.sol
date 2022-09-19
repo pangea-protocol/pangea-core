@@ -38,7 +38,7 @@ import "./interfaces/IYieldToken.sol";
 import "./interfaces/IYieldPoolStruct.sol";
 
 /// @notice Custom Pool : Yield pool, it's for liquidity mining using reward token
-contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPAirdropCallee, Initializable {
+contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPRewardCallee, Initializable {
     using SafeERC20 for IERC20;
     using RewardTicks for mapping(int24 => Tick);
 
@@ -89,7 +89,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     /// @dev reward fee growth counters are multiplied by 2 ^ 128.
     uint256 internal rewardGrowthGlobal_;
     uint256 public rewardPerSecond;
-    /// @dev amount of the deposited reward, it'll be distributed on next airdrop epoch
+    /// @dev deprecated fields...
     uint128 public depositedReward;
 
     uint128 internal token0ProtocolFee;
@@ -141,6 +141,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
     error NotAuthorized();
     error AlreadyPriceInitialized();
 
+    // deprecated
     event DistributeReward(address token, uint256 amount, uint256 startTime, uint256 period);
 
     modifier lock() {
@@ -154,7 +155,7 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         bool _zeroForYield = zeroForYield;
         _updateYield(_zeroForYield);
         _;
-        _updateShare(_zeroForYield);
+        _updateShareAndYBalance(_zeroForYield);
     }
 
     function initialize(bytes memory _deployData, address _masterDeployer) external initializer {
@@ -509,13 +510,16 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         uint256 cachedRewardGrowthGlobal,
         bool zeroForOne
     ) internal {
+        uint256 _yieldGrowthGlobal0 = zeroForYield ? _yieldGrowthGlobal : 0;
+        uint256 _yieldGrowthGlobal1 = zeroForYield ? 0 : _yieldGrowthGlobal;
+
         (cache.currentLiquidity, cache.nextTickToCross) = ticks.cross(
             rewardGrowthOutsidePerTicks,
             cache.nextTickToCross,
             secondsGrowthGlobal,
             cache.currentLiquidity,
-            zeroForOne ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0,
-            zeroForOne ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1,
+            zeroForOne ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 + _yieldGrowthGlobal1 : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0 + _yieldGrowthGlobal0,
+            zeroForOne ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 + _yieldGrowthGlobal0 : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1 + _yieldGrowthGlobal1,
             cachedRewardGrowthGlobal,
             zeroForOne,
             tickSpacing
@@ -619,24 +623,21 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         return (amount0, amount1);
     }
 
-    /// @dev deposit Airdrop tokens. This Airdrop will be provided to the LP with the swap Fee for a given period
+    /// @dev deposit Airdrop tokens & Rewards
     /// @param airdrop0   amount of token0 to deposit
     /// @param airdrop1   amount of token1 to deposit
+    /// @param reward     amount of reward to deposit
     /// @param startTime  Airdrop distribution start time
     /// @param period     Airdrop distribution period
-    function depositAirdrop(
+    function depositAirdropAndReward(
         uint128 airdrop0,
         uint128 airdrop1,
+        uint128 reward,
         uint256 startTime,
         uint256 period
     ) external lock settleYield {
         if (masterDeployer.airdropDistributor() != msg.sender) revert NotAuthorized();
         if (startTime + period <= block.timestamp) revert InvalidParam();
-
-        uint128 reward = depositedReward;
-        depositedReward = 0;
-
-        if (reward > 0) emit DistributeReward(rewardToken, reward, startTime, period);
 
         // not allowed before the previous airdrop is ended
         uint256 _airdropStartTime = airdropStartTime;
@@ -651,6 +652,9 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         if (airdrop1 > 0) {
             _transferFromMsgSender(token1, airdrop1);
             reserve1 += airdrop1;
+        }
+        if (reward > 0) {
+            _transferFromMsgSender(rewardToken, reward);
         }
 
         // distribute previous epoch airdrop if exist
@@ -675,14 +679,6 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         rewardPerSecond = FullMath.mulDiv(reward, FixedPoint.Q128, period);
         airdropStartTime = startTime;
         airdropPeriod = period;
-    }
-
-    /// @dev deposit Reward Token. msg.sender should approve the amount of reward token.
-    //       This will be distributed at the next airdrop.
-    /// @param amount amount of reward to deposit
-    function depositReward(uint128 amount) external settleYield {
-        _transferFromMsgSender(rewardToken, amount);
-        depositedReward += amount;
     }
 
     function _ensureTickSpacing(int24 lower, int24 upper) internal view {
@@ -1164,9 +1160,16 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
         return _accumulativeYield + pendingYield + yBalance - _reserve;
     }
 
-    function _updateShare(bool _zeroForYield) internal {
-        address token = _zeroForYield ? token0 : token1;
-        shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+    function _updateShareAndYBalance(bool _zeroForYield) internal {
+        if (_zeroForYield) {
+            address token = token0;
+            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+            reserve0 = uint128(IYieldToken(token).balanceOf(address(this)));
+        } else {
+            address token = token1;
+            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
+            reserve1 = uint128(IYieldToken(token).balanceOf(address(this)));
+        }
     }
 
     function _getYieldBalance(bool _zeroForYield) internal view returns (uint128) {

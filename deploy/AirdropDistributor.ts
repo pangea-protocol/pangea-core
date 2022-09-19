@@ -14,7 +14,7 @@ const deployFunction: DeployFunction = async function ({
   const masterDeployer = await ethers.getContract<MasterDeployer>("MasterDeployer");
   const wklay = await ethers.getContract<WETH10>("WETH10");
 
-  const deployResult  = await deploy("AirdropDistributor", {
+  const deployResult = await deploy("AirdropDistributorV2", {
     from: deployer,
     proxy: {
       owner: dev,
@@ -38,6 +38,6 @@ const deployFunction: DeployFunction = async function ({
 
 export default deployFunction;
 
-deployFunction.dependencies = ["MasterDeployer", "WETH10"];
+// deployFunction.dependencies = ["MasterDeployer", "WETH10"];
 
 deployFunction.tags = ["AirdropDistributor", 'deploy'];

@@ -770,7 +770,7 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
 
       await pool
         .connect(airdropDistributor)
-        .depositAirdrop(airdrop0, airdrop1, startTime, period);
+        .depositAirdropAndReward(airdrop0, airdrop1, 0, startTime, period);
     });
 
     /*

@@ -12,7 +12,7 @@ contract MockYToken is ERC20 {
     /// @notice Total staked through this contract including restaked amount
     uint256 public totalStaking;
 
-    uint256 public liquidityIndex = 10**18;
+    uint256 public stakingSharesRatio = 10**18;
 
     /// @notice Amount of shares for each user
     mapping(address => uint256) private shares;
@@ -57,7 +57,7 @@ contract MockYToken is ERC20 {
      */
     function increaseTotalStaking(uint256 amount) external {
         totalStaking += amount;
-        if (totalShares > 0) liquidityIndex = (totalStaking * 10**27) / totalShares;
+        if (totalShares > 0) stakingSharesRatio = (totalStaking * 10**27) / totalShares;
     }
 
     ///////////////////////////////////////////////////////////////////
@@ -216,7 +216,7 @@ contract MockYToken is ERC20 {
      * @param sharesAmount amount of shares to convert
      */
     function _getKlayByShares(uint256 sharesAmount) private view returns (uint256) {
-        return (sharesAmount * liquidityIndex) / 10**6 / 10**21;
+        return (sharesAmount * stakingSharesRatio) / 10**27;
     }
 
     /**
@@ -225,6 +225,6 @@ contract MockYToken is ERC20 {
      * @param klayAmount amount of fKlay to convert
      */
     function _getSharesByKlay(uint256 klayAmount) private view returns (uint256) {
-        return (klayAmount * 10**27 + liquidityIndex - 1) / liquidityIndex;
+        return (klayAmount * 10**27 + stakingSharesRatio - 1) / stakingSharesRatio;
     }
 }

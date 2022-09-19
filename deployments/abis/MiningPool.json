@@ -326,6 +326,11 @@
         "type": "uint128"
       },
       {
+        "internalType": "uint128",
+        "name": "reward",
+        "type": "uint128"
+      },
+      {
         "internalType": "uint256",
         "name": "startTime",
         "type": "uint256"
@@ -336,20 +341,7 @@
         "type": "uint256"
       }
     ],
-    "name": "depositAirdrop",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint128",
-        "name": "amount",
-        "type": "uint128"
-      }
-    ],
-    "name": "depositReward",
+    "name": "depositAirdropAndReward",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

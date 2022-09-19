@@ -151,6 +151,18 @@ describe("AirdropDistributor", async () => {
       ).to.be.revertedWith("NotPoolToken");
     });
 
+    it("revert case) masterDeployer.", async () => {
+      // GIVEN
+      masterDeployer.airdropDistributor.returns(ethers.constants.AddressZero);
+
+      // THEN
+      await expect(
+        airdropDistributor
+          .connect(deployer)
+          .depositToken(pool0.address, token0.address, airdropAmount)
+      ).to.be.revertedWith("AirdropDistributor is phased");
+    });
+
     it("DEPOSIT token0", async () => {
       // GIVEN
       masterDeployer.pools.whenCalledWith(pool0.address).returns(true);

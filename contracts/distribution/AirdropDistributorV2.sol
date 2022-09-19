@@ -15,22 +15,17 @@ pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IConcentratedLiquidityPool.sol";
 import "../interfaces/IMasterDeployer.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/LPAirdropCallee.sol";
 import "../libraries/SafeCast.sol";
-import "../interfaces/IAirdropDistributor.sol";
 import "../interfaces/IAirdropPool.sol";
-
-/**
- * DEPRECATED CONTRACT!
- * USE AirdropDistributorV2
- */
+import "../interfaces/IAirdropDistributorV2.sol";
 
 // @notice Airdrop Token distribution Contract for Liquidity Provider
-contract AirdropDistributor is IAirdropDistributor, Initializable {
+contract AirdropDistributorV2 is IAirdropDistributorV2, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     address internal wKLAY;
@@ -42,7 +37,6 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
     mapping(address => mapping(address => uint128)) private depositAmount;
     mapping(address => uint256) private airdropStartTimePerPool;
 
-    mapping(address => AirdropInfo[]) private _airdropSnapshot;
     uint256 public constant PERIOD = 1 weeks;
 
     modifier NotPhased() {
@@ -53,6 +47,7 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
     function initialize(address _masterDeployer, address _WKLAY) external initializer {
         masterDeployer = IMasterDeployer(_masterDeployer);
         wKLAY = _WKLAY;
+        __Ownable_init();
     }
 
     function epochStartTime() public view returns (uint256) {
@@ -68,22 +63,38 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
         return airdropPool.length;
     }
 
-    function airdropSnapshot(address pool, uint256 idx) external view returns (AirdropInfo memory snapshot) {
-        snapshot = _airdropSnapshot[pool][idx];
+    /// @notice list of tokens that can be airdropped to the given pool
+    function airdropTokens(address pool) public view returns (address[] memory tokens) {
+        address token0 = IConcentratedLiquidityPool(pool).token0();
+        address token1 = IConcentratedLiquidityPool(pool).token1();
+        if (_supportRewardToken(pool)) {
+            tokens = new address[](3);
+            tokens[0] = token0;
+            tokens[1] = token1;
+            tokens[2] = LPRewardCallee(pool).rewardToken();
+        } else {
+            tokens = new address[](2);
+            tokens[0] = token0;
+            tokens[1] = token1;
+        }
     }
 
-    function airdropSnapshotLength(address pool) external view returns (uint256 length) {
-        length = _airdropSnapshot[pool].length;
-    }
-
-    /// @notice airdrop information deposited in the pool. amount0 & amount1 will be zero after airdrop allocation
-    function depositedAirdrop(address pool) external view returns (AirdropInfo memory) {
-        return
-            AirdropInfo(
-                depositAmount[pool][IConcentratedLiquidityPool(pool).token0()],
-                depositAmount[pool][IConcentratedLiquidityPool(pool).token1()],
-                airdropStartTimePerPool[pool]
-            );
+    /// @notice airdrop information deposited in the pool
+    function depositedAirdrop(address pool)
+        external
+        view
+        returns (
+            address[] memory tokens,
+            uint256[] memory amounts,
+            uint256 startTime
+        )
+    {
+        tokens = airdropTokens(pool);
+        amounts = new uint256[](tokens.length);
+        for (uint256 i = 0; i < amounts.length; i++) {
+            amounts[i] = depositAmount[pool][tokens[i]];
+        }
+        startTime = airdropStartTimePerPool[pool];
     }
 
     /// @notice deposit klay to the pool. this klay will be distributed to the next epoch
@@ -91,6 +102,8 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
     /// @dev transaction will revert if the asset in the pool is not WKLAY
     function depositKlay(address pool) external payable NotPhased {
         address token = wKLAY;
+        validateToDeposit(pool, token);
+
         uint256 amount = msg.value;
         IWETH(token).deposit{value: amount}();
 
@@ -107,6 +120,7 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
         address token,
         uint128 amount
     ) external NotPhased {
+        validateToDeposit(pool, token);
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         _deposit(pool, token, amount);
@@ -117,7 +131,7 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
     function airdrop(address pool) external NotPhased {
         if (airdropStartTimePerPool[pool] > epochStartTime()) revert NotYet();
 
-        _airdrop(pool);
+        _distribute(pool);
     }
 
     /// @notice airdrop Batch Call
@@ -130,7 +144,7 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
             if (airdropStartTimePerPool[pool] > _epochStartTime) continue;
             if ((IAirdropPool(pool).airdropStartTime() + IAirdropPool(pool).airdropPeriod()) > _epochStartTime) continue;
 
-            _airdrop(pool);
+            _distribute(pool);
         }
     }
 
@@ -140,10 +154,25 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
 
         for (uint256 i = 0; i < airdropPool.length; i++) {
             address pool = airdropPool[i];
-            if (airdropStartTimePerPool[pool] > 0 && airdropStartTimePerPool[pool] <= _epochStartTime) {
-                _airdrop(pool);
+            if ((IAirdropPool(pool).airdropStartTime() + IAirdropPool(pool).airdropPeriod()) > _epochStartTime) {
+                continue;
+            }
+
+            if (airdropStartTimePerPool[pool] <= _epochStartTime) {
+                _distribute(pool);
             }
         }
+    }
+
+    function validateToDeposit(address pool, address token) internal {
+        if (!masterDeployer.pools(pool)) revert NotExists();
+        address[] memory tokens = airdropTokens(pool);
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (token == tokens[i]) return;
+        }
+
+        revert NotAllowedToken();
     }
 
     function _deposit(
@@ -151,13 +180,10 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
         address token,
         uint128 amount
     ) internal {
-        if (!masterDeployer.pools(pool)) revert NotExists();
-        if (IConcentratedLiquidityPool(pool).token0() != token && IConcentratedLiquidityPool(pool).token1() != token) revert NotPoolToken();
-
         if (airdropStartTimePerPool[pool] > 0 && airdropStartTimePerPool[pool] <= epochStartTime()) {
             // edge case
             // If the previously deposited assets have not been distributed, distribute them first and deposit.
-            _airdrop(pool);
+            _distribute(pool);
         }
 
         if (!isAirdropPool[pool]) {
@@ -171,28 +197,66 @@ contract AirdropDistributor is IAirdropDistributor, Initializable {
         emit Deposit(pool, token, amount, msg.sender);
     }
 
+    function _supportRewardToken(address pool) internal view returns (bool ok) {
+        try LPRewardCallee(pool).rewardToken() returns (address) {
+            ok = true;
+        } catch {
+            ok = false;
+        }
+        return ok;
+    }
+
+    function _distribute(address pool) internal {
+        if (_supportRewardToken(pool)) {
+            _airdropWithRewardToken(pool);
+        } else {
+            _airdrop(pool);
+        }
+    }
+
     function _airdrop(address pool) internal {
         address token0 = IConcentratedLiquidityPool(pool).token0();
         address token1 = IConcentratedLiquidityPool(pool).token1();
 
-        uint128 airdrop0 = depositAmount[pool][token0];
-        uint128 airdrop1 = depositAmount[pool][token1];
-        depositAmount[pool][token0] = 0;
-        depositAmount[pool][token1] = 0;
-        airdropStartTimePerPool[pool] = 0; // reset
+        uint256 startTime = epochStartTime();
+        uint256 period = PERIOD;
 
-        IERC20(token0).approve(pool, airdrop0);
-        IERC20(token1).approve(pool, airdrop1);
+        uint128 airdrop0 = _loadAirdropAmount(pool, token0, startTime, period);
+        uint128 airdrop1 = _loadAirdropAmount(pool, token1, startTime, period);
+
+        airdropStartTimePerPool[pool] = 0;
+
+        LPAirdropCallee(pool).depositAirdrop(airdrop0, airdrop1, startTime, period);
+    }
+
+    function _airdropWithRewardToken(address pool) internal {
+        address token0 = IConcentratedLiquidityPool(pool).token0();
+        address token1 = IConcentratedLiquidityPool(pool).token1();
+        address rewardToken = LPRewardCallee(pool).rewardToken();
 
         uint256 startTime = epochStartTime();
         uint256 period = PERIOD;
 
-        LPAirdropCallee(pool).depositAirdrop(airdrop0, airdrop1, startTime, period);
+        uint128 airdrop0 = _loadAirdropAmount(pool, token0, startTime, period);
+        uint128 airdrop1 = _loadAirdropAmount(pool, token1, startTime, period);
+        uint128 reward = _loadAirdropAmount(pool, rewardToken, startTime, period);
 
-        IERC20(token0).approve(pool, 0);
-        IERC20(token1).approve(pool, 0);
+        airdropStartTimePerPool[pool] = 0;
 
-        _airdropSnapshot[pool].push(AirdropInfo(airdrop0, airdrop1, startTime));
-        emit Airdrop(pool, token0, token1, airdrop0, airdrop1, startTime, period);
+        LPRewardCallee(pool).depositAirdropAndReward(airdrop0, airdrop1, reward, startTime, period);
+    }
+
+    function _loadAirdropAmount(
+        address pool,
+        address token,
+        uint256 startTime,
+        uint256 period
+    ) internal returns (uint128 amount) {
+        amount = depositAmount[pool][token];
+        if (amount == 0) return amount;
+
+        depositAmount[pool][token] = 0;
+        IERC20(token).approve(pool, amount);
+        emit Airdrop(pool, token, amount, startTime, period);
     }
 }

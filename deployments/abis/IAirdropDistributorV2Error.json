@@ -1,0 +1,17 @@
+[
+  {
+    "inputs": [],
+    "name": "NotAllowedToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotYet",
+    "type": "error"
+  }
+]
