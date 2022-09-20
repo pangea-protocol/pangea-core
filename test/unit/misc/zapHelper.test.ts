@@ -7,10 +7,10 @@ import {
   MasterDeployer,
   PoolRouter,
   SwapHelper,
-  WETH10,
   ZapHelper,
 } from "../../../types";
 import { BigNumber, BigNumberish } from "ethers";
+
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
 import { expect } from "chai";
@@ -30,13 +30,11 @@ describe("ZAP:HELPER", function () {
   let trader: SignerWithAddress;
 
   let pangea: Pangea;
-  let wklay: WETH10;
   let masterDeployer: MasterDeployer;
   let poolFactory: ConcentratedLiquidityPoolFactory;
   let poolManager: ConcentratedLiquidityPoolManager;
   let swapHelper: SwapHelper;
   let pool: ConcentratedLiquidityPool;
-  let nativePool: ConcentratedLiquidityPool;
   let router: PoolRouter;
   let zapHelper: ZapHelper;
   let token0: ERC20Test;
@@ -50,7 +48,6 @@ describe("ZAP:HELPER", function () {
 
     // ======== CONTRACT ==========
     pangea = await Pangea.Instance.init();
-    wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
     poolFactory = pangea.concentratedPoolFactory;
     poolManager = pangea.concentratedPoolManager;
@@ -179,6 +176,7 @@ describe("ZAP:HELPER", function () {
     });
   }
 
+
   async function addLiquidity(lowerTick: number, upperTick: number) {
     const amount0Desired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amount0Desired.mul(4));
@@ -255,10 +253,8 @@ describe("ZAP:HELPER", function () {
    *
    * test 1)                                |<------|
    * test 2)                        |<--------------|
-   * test 3)                     <..|<--------------|
-   * test 4)                                        |------>|
-   * test 5)                                        |---------->|
-   * test 6)                                        |-----------|..>
+   * test 3)                                        |------>|
+   * test 4)                                        |---------->|
    */
   describe("# SINGLE POSITION SWAP CASE", async () => {
     let liquidity: BigNumber;
