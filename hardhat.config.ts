@@ -51,7 +51,7 @@ const config: HardhatUserConfig = {
     },
     baobab: {
       chainId: 1001,
-      url: 'https://baobab.ken.stick.us/',
+      url: 'https://public-node-api.klaytnapi.com/v1/baobab',
       accounts,
       gasPrice: 250000000000
     },
@@ -66,6 +66,7 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: {
       default: 0,
+      cypress: "0x2A2F23ff33671361010D357529BDF0adca9416Fc"
     },
     dev: {
       default: 1,

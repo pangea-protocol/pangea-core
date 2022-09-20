@@ -1,31 +1,19 @@
 import { task } from "hardhat/config";
-import {IERC20Metadata__factory, MasterDeployer, YieldPoolFactory} from "../types";
+import {IERC20Metadata__factory, MasterDeployer, MiningPoolFactory, YieldPoolFactory} from "../types";
 import {BigNumber} from "ethers";
 import {doTransaction} from "../deploy/utils";
 
-task("yieldPool:whitelist", "delete Pool")
-    .setAction(async ({},{ethers})=> {
-      const [deployer] = await ethers.getSigners();
 
-      const masterDeployer = await ethers.getContract('MasterDeployer') as MasterDeployer;
-      const yieldPoolFactory = await ethers.getContract("YieldPoolFactory") as YieldPoolFactory;
-
-      if ((await masterDeployer.connect(deployer).whitelistedFactories(yieldPoolFactory.address))) {
-        await doTransaction(masterDeployer.connect(deployer).removeFromWhitelistFactory(yieldPoolFactory.address));
-      }
-
-      console.log(await masterDeployer.connect(deployer).whitelistedFactories(yieldPoolFactory.address));
-    })
-
-
-task("yieldPool:create", "current timestamp")
+task("yieldPool:create", "create custom Pool: yieldPool")
     .addPositionalParam('token')
     .addPositionalParam('rewardToken')
     .addPositionalParam('swapFee')
     .addPositionalParam('tickSpacing')
     .addPositionalParam('tokenAmount')
     .addPositionalParam('yieldTokenAmount')
-    .setAction(async ({token, rewardToken, swapFee, tickSpacing, tokenAmount, yieldTokenAmount}, {ethers}) => {
+    .setAction(async (
+        {token, rewardToken, swapFee, tickSpacing, tokenAmount, yieldTokenAmount},
+        {ethers}) => {
           const [deployer] = await ethers.getSigners();
 
           const masterDeployer = await ethers.getContract('MasterDeployer') as MasterDeployer;
@@ -71,6 +59,59 @@ task("yieldPool:create", "current timestamp")
           );
 
           console.log("complete");
+    });
+
+
+task("miningPool:create", "create custom Pool: miningPool")
+    .addPositionalParam('token0Address')
+    .addPositionalParam('token1Address')
+    .addPositionalParam('rewardTokenAddress')
+    .addPositionalParam('swapFee')
+    .addPositionalParam('tickSpacing')
+    .addPositionalParam('tokenAmount')
+    .addPositionalParam('yieldTokenAmount')
+    .setAction(async (
+        {token0Address, token1Address, rewardTokenAddress, swapFee, tickSpacing, tokenAmount, yieldTokenAmount},
+        {ethers}) => {
+      const [deployer] = await ethers.getSigners();
+
+      const masterDeployer = await ethers.getContract('MasterDeployer') as MasterDeployer;
+      const miningPoolFactory = await ethers.getContract("MiningPoolFactory") as MiningPoolFactory;
+
+      const token0 = await IERC20Metadata__factory.connect(token0Address, ethers.provider);
+      const token1 = await IERC20Metadata__factory.connect(token1Address, ethers.provider);
+
+      let price;
+      if (token0Address.toLowerCase() < token1Address.toLowerCase()) {
+        price = calculatePrice(
+            ethers.utils.parseUnits(tokenAmount, await token0.decimals()),
+            ethers.utils.parseUnits(yieldTokenAmount, await token1.decimals())
+        );
+      } else {
+        [token0Address, token1Address] = [token1Address, token0Address];
+        price = calculatePrice(
+            ethers.utils.parseUnits(yieldTokenAmount, await token1.decimals()),
+            ethers.utils.parseUnits(tokenAmount, await token0.decimals()),
+        );
+      }
+
+      await doTransaction(miningPoolFactory.connect(deployer).setAvailableParameter(
+          token0Address,
+          token1Address,
+          rewardTokenAddress,
+          swapFee,
+          tickSpacing
+      ));
+
+      await doTransaction(masterDeployer.connect(deployer).deployPool(
+          miningPoolFactory.address,
+          ethers.utils.defaultAbiCoder.encode(
+              ["address", "address", "address", "uint24", "uint160", "uint24"],
+              [token0Address, token1Address, rewardTokenAddress, swapFee, price, tickSpacing]
+          ))
+      );
+
+      console.log("complete");
     });
 
 
