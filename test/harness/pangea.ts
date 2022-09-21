@@ -156,6 +156,26 @@ export class Pangea {
       [600, 6],
       [100, 1],
     ];
+    await this.concentratedPoolFactory.setAvailableFeeAndTickSpacing(
+      10_000,
+      100,
+      true
+    );
+    await this.concentratedPoolFactory.setAvailableFeeAndTickSpacing(
+      2_000,
+      20,
+      true
+    );
+    await this.concentratedPoolFactory.setAvailableFeeAndTickSpacing(
+      600,
+      6,
+      true
+    );
+    await this.concentratedPoolFactory.setAvailableFeeAndTickSpacing(
+      100,
+      1,
+      true
+    );
 
     function data(token0, token1, fee, price, tickSpacing) {
       return utils.defaultAbiCoder.encode(

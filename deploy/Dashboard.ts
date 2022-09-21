@@ -13,7 +13,7 @@ const deployFunction: DeployFunction = async function ({
     const { deployer, dev } = await getNamedAccounts();
 
     const masterDeployer = await ethers.getContract<MasterDeployer>("MasterDeployer");
-    const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributor");
+    const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributorV2");
     const positionManager = await ethers.getContract<ConcentratedLiquidityPoolManager>("ConcentratedLiquidityPoolManager");
 
     await deploy("PoolDashboard", {

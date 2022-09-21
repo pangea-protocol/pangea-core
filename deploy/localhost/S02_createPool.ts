@@ -112,6 +112,9 @@ function createDeployData(token0:string, token1:string, fee:number, token0Amount
 }
 
 export function getTickSpacing(feeAmount: number) {
+    if (feeAmount == 600 || feeAmount == 100) {
+        return 2;
+    }
     const feeUnit = 100; // 0.01%
     return Math.round(feeAmount / feeUnit);
 }

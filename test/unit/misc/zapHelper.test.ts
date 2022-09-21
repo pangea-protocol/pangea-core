@@ -9,13 +9,14 @@ import {
   SwapHelper,
   ZapHelper,
 } from "../../../types";
-import { BigNumber } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
+
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
 import { expect } from "chai";
 import { Pangea } from "../../harness/pangea";
 
-describe.only("ZAP:HELPER", function () {
+describe("ZAP:HELPER", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 2000; // 0.2%
   const TICK_SPACING = 40;
@@ -82,12 +83,39 @@ describe.only("ZAP:HELPER", function () {
       )
     );
 
+    const [tokenN0, tokenN1] =
+      token0.address.toLowerCase() < wklay.address.toLowerCase()
+        ? [token0.address, wklay.address]
+        : [wklay.address, token0.address];
+    await masterDeployer.deployPool(
+      poolFactory.address,
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint24", "uint160", "uint24", "address"],
+        [
+          tokenN0,
+          tokenN1,
+          BigNumber.from(SWAP_FEE),
+          TWO_POW_96,
+          BigNumber.from(TICK_SPACING),
+          ethers.constants.AddressZero,
+        ]
+      )
+    );
+
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<ConcentratedLiquidityPool>(
       "ConcentratedLiquidityPool",
       poolAddress
+    );
+
+    const nativePoolAddress = (
+      await poolFactory.getPools(token0.address, wklay.address, 0, 1)
+    )[0];
+    nativePool = await ethers.getContractAt<ConcentratedLiquidityPool>(
+      "ConcentratedLiquidityPool",
+      nativePoolAddress
     );
 
     await token0
@@ -116,6 +144,39 @@ describe.only("ZAP:HELPER", function () {
     _snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
 
+  async function swapToken0ToToken1(
+    amountIn: BigNumber,
+    amountOutMinimum: BigNumber
+  ) {
+    return await router.connect(trader).callStatic.exactInputSingle({
+      tokenIn: token0.address,
+      amountIn,
+      amountOutMinimum,
+      pool: pool.address,
+      to: trader.address,
+      unwrap: false,
+    });
+  }
+
+  async function swapToken1ToToken0(
+    amountIn: BigNumber,
+    amountOutMinimum: BigNumber
+  ) {
+    // For test, trader always mint token
+    await token1.connect(trader).mint(trader.address, amountIn);
+    await token1.connect(trader).approve(router.address, amountIn);
+
+    return await router.connect(trader).callStatic.exactInputSingle({
+      tokenIn: token1.address,
+      amountIn,
+      amountOutMinimum,
+      pool: pool.address,
+      to: trader.address,
+      unwrap: false,
+    });
+  }
+
+
   async function addLiquidity(lowerTick: number, upperTick: number) {
     const amount0Desired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amount0Desired.mul(4));
@@ -140,6 +201,41 @@ describe.only("ZAP:HELPER", function () {
         amount1Desired,
         0,
         0
+      );
+  }
+
+  async function addLiquidityNative(lowerTick: number, upperTick: number) {
+    const amountDesired = ethers.utils.parseEther("100");
+    await token0.mint(liquidityProvider.address, amountDesired);
+    await token0
+      .connect(liquidityProvider)
+      .approve(poolManager.address, amountDesired);
+
+    await poolManager
+      .connect(liquidityProvider)
+      .mintNative(
+        nativePool.address,
+        lowerTick,
+        lowerTick,
+        upperTick,
+        upperTick,
+        amountDesired,
+        0,
+        0,
+        { value: amountDesired }
+      );
+  }
+
+  async function burnLiquidityAll(positionId: BigNumberish) {
+    await poolManager
+      .connect(liquidityProvider)
+      .burn(
+        positionId,
+        BigNumber.from(2).pow(100),
+        liquidityProvider.address,
+        0,
+        0,
+        false
       );
   }
 

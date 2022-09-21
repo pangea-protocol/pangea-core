@@ -36,6 +36,8 @@ contract ConcentratedLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLi
     error ZeroAddress();
     error InvalidFeeAndTickSpacing();
 
+    event UpdateAvailableFeeAndTickSpacing(uint24 fee, uint24 tickSpacing, bool ok);
+
     function initialize(address _masterDeployer, address _poolLogger) external initializer {
         if (_masterDeployer == address(0)) revert ZeroAddress();
         if (_poolLogger == address(0)) revert ZeroAddress();
@@ -44,8 +46,9 @@ contract ConcentratedLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLi
 
         availableFeeAndTickSpacing[10_000][100] = true; // swapFee = 1.0%  / tickSpacing = 100
         availableFeeAndTickSpacing[2_000][20] = true; // swapFee = 0.2%  / tickSpacing =  20
-        availableFeeAndTickSpacing[600][6] = true; // swapFee = 0.06% / tickSpacing =   6
-        availableFeeAndTickSpacing[100][1] = true; // swapFee = 0.01% / tickSpacing =   1
+        /// @dev why not set the tick spacing to 1? To avoid truncation errors on the client side(UX).
+        availableFeeAndTickSpacing[600][2] = true; // swapFee = 0.06% / tickSpacing =   2
+        availableFeeAndTickSpacing[100][2] = true; // swapFee = 0.01% / tickSpacing =   2
 
         __Ownable_init();
     }
@@ -56,6 +59,8 @@ contract ConcentratedLiquidityPoolFactory is OwnableUpgradeable, IConcentratedLi
         bool ok
     ) external onlyOwner {
         availableFeeAndTickSpacing[fee][tickSpacing] = ok;
+
+        emit UpdateAvailableFeeAndTickSpacing(fee, tickSpacing, ok);
     }
 
     function deployPool(bytes memory _deployData) external returns (address pool) {

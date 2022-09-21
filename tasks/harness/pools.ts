@@ -1,10 +1,11 @@
 import {convertPrice, TokenContracts, Tokens} from "./tokens";
 import {
   ConcentratedLiquidityPool,
-  ConcentratedLiquidityPoolFactory,
-  ConcentratedLiquidityPoolHelper
+  ConcentratedLiquidityPoolHelper,
+  MasterDeployer
 } from "../../types";
 import {BigNumber} from "ethers";
+import {ethers} from "hardhat";
 
 function denom(decimal:number) {
   return BigNumber.from(10).pow(decimal)
@@ -22,7 +23,7 @@ export function convertToRatio(priceSqrtX96:BigNumber, decimal0:number, decimal1
 export class PoolContracts {
   private static _instance: PoolContracts;
 
-  public poolFactory!: ConcentratedLiquidityPoolFactory;
+  public masterDeployer!: MasterDeployer;
   public tokens!: TokenContracts;
 
   public static get Instance() {
@@ -32,7 +33,7 @@ export class PoolContracts {
   public async init() {
     const {ethers} = require("hardhat");
     this.tokens = await Tokens();
-    this.poolFactory = await ethers.getContract("ConcentratedLiquidityPoolFactory") as ConcentratedLiquidityPoolFactory;
+    this.masterDeployer = await ethers.getContract("MasterDeployer") as MasterDeployer;
     return this;
   }
 
@@ -53,6 +54,7 @@ export class PoolContracts {
       address,
       token0,
       token1,
+      factory: immutables._factory,
       price: convertToRatio(priceInfo._price, token0.decimals, token1.decimals),
       nearestTick: priceInfo._nearestTick,
       tickSpacing: immutables._tickSpacing,
@@ -74,26 +76,11 @@ export class PoolContracts {
     return await ethers.getContractAt("ConcentratedLiquidityPool",address) as ConcentratedLiquidityPool;
   }
 
-  public async fromTwoToken(token0:string, token1:string) {
-    const counts = await this.poolFactory.poolsCount(token0, token1);
-    if (counts.toNumber() > 0) {
-      return (await this.poolFactory.getPools(token0, token1, 0, 1))[0]
-    }
-    throw new Error("NOT FOUND")
-  }
-
   async allPools() {
-    const tokens = this.tokens.all()
     const result:string[] = []
-    for (let i=0;i<tokens.length-1; i++) {
-      for (let j=i+1;j<tokens.length;j++) {
-        const token0 = tokens[i].address
-        const token1 = tokens[j].address
-        const counts = await this.poolFactory.poolsCount(token0, token1);
-        if (counts.toNumber() > 0) {
-          result.push(...(await this.poolFactory.getPools(token0, token1, 0, counts)))
-        }
-      }
+    const poolCounts = (await this.masterDeployer.totalPoolsCount()).toNumber()
+    for (let i=0;i<poolCounts;i++) {
+      result.push(await this.masterDeployer.getPoolAddress(i))
     }
     return result;
   }

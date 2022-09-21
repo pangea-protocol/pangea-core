@@ -10,7 +10,7 @@ import {
     WEMIX,
     WETH10,
     ConcentratedLiquidityPool,
-    ERC20Test, AirdropDistributor, MasterDeployer
+    ERC20Test, AirdropDistributor, MasterDeployer, AirdropDistributorV2
 } from "../../types";
 import {BigNumber} from "@ethersproject/bignumber";
 import {TickMath} from "@uniswap/v3-sdk";
@@ -76,7 +76,7 @@ const deployFunction: DeployFunction = async function (
     const factory = await ethers.getContract<ConcentratedLiquidityPoolFactory>("ConcentratedLiquidityPoolFactory");
     const poolManager = await ethers.getContract<ConcentratedLiquidityPoolManager>("ConcentratedLiquidityPoolManager")
     const poolHelper = await ethers.getContract<ConcentratedLiquidityPoolHelper>("ConcentratedLiquidityPoolHelper")
-    const airdropDistributor = await ethers.getContract<AirdropDistributor>("AirdropDistributor")
+    const airdropDistributor = await ethers.getContract<AirdropDistributorV2>("AirdropDistributorV2")
 
     async function getLatestPoolAddress(token0: string, token1: string) {
         const counts = await factory.poolsCount(token0, token1);

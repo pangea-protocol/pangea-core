@@ -86,6 +86,6 @@ const deployFunction: DeployFunction = async function (
 
 export default deployFunction;
 
-deployFunction.dependencies = ["ConcentratedLiquidityPoolManager"];
+// deployFunction.dependencies = ["ConcentratedLiquidityPoolManager"];
 
 deployFunction.tags = ["PositionDescription", "deploy"];
