@@ -428,6 +428,47 @@
         "type": "int24"
       }
     ],
+    "name": "positionRewards",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "rewardGrowthInsideLast",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint128",
+            "name": "rewardOwed",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IMiningPoolStruct.PositionReward",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "int24",
+        "name": "lower",
+        "type": "int24"
+      },
+      {
+        "internalType": "int24",
+        "name": "upper",
+        "type": "int24"
+      }
+    ],
     "name": "positions",
     "outputs": [
       {
@@ -535,6 +576,25 @@
   {
     "inputs": [],
     "name": "rewardGrowthGlobal",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "int24",
+        "name": "tick",
+        "type": "int24"
+      }
+    ],
+    "name": "rewardGrowthOutsidePerTicks",
     "outputs": [
       {
         "internalType": "uint256",
