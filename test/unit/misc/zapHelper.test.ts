@@ -9,7 +9,7 @@ import {
   SwapHelper,
   ZapHelper,
 } from "../../../types";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
@@ -83,39 +83,12 @@ describe("ZAP:HELPER", function () {
       )
     );
 
-    const [tokenN0, tokenN1] =
-      token0.address.toLowerCase() < wklay.address.toLowerCase()
-        ? [token0.address, wklay.address]
-        : [wklay.address, token0.address];
-    await masterDeployer.deployPool(
-      poolFactory.address,
-      ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint24", "uint160", "uint24", "address"],
-        [
-          tokenN0,
-          tokenN1,
-          BigNumber.from(SWAP_FEE),
-          TWO_POW_96,
-          BigNumber.from(TICK_SPACING),
-          ethers.constants.AddressZero,
-        ]
-      )
-    );
-
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<ConcentratedLiquidityPool>(
       "ConcentratedLiquidityPool",
       poolAddress
-    );
-
-    const nativePoolAddress = (
-      await poolFactory.getPools(token0.address, wklay.address, 0, 1)
-    )[0];
-    nativePool = await ethers.getContractAt<ConcentratedLiquidityPool>(
-      "ConcentratedLiquidityPool",
-      nativePoolAddress
     );
 
     await token0
@@ -201,41 +174,6 @@ describe("ZAP:HELPER", function () {
         amount1Desired,
         0,
         0
-      );
-  }
-
-  async function addLiquidityNative(lowerTick: number, upperTick: number) {
-    const amountDesired = ethers.utils.parseEther("100");
-    await token0.mint(liquidityProvider.address, amountDesired);
-    await token0
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amountDesired);
-
-    await poolManager
-      .connect(liquidityProvider)
-      .mintNative(
-        nativePool.address,
-        lowerTick,
-        lowerTick,
-        upperTick,
-        upperTick,
-        amountDesired,
-        0,
-        0,
-        { value: amountDesired }
-      );
-  }
-
-  async function burnLiquidityAll(positionId: BigNumberish) {
-    await poolManager
-      .connect(liquidityProvider)
-      .burn(
-        positionId,
-        BigNumber.from(2).pow(100),
-        liquidityProvider.address,
-        0,
-        0,
-        false
       );
   }
 
