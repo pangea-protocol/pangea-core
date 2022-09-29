@@ -108,9 +108,8 @@ contract PoolRouter is PangeaPermit, PangeaBatchable, IPoolRouter, Initializable
         if (params.amountInMaximum < amountIn) revert TooLittleAmountIn();
         if (params.tokenIn == USE_KLAY) {
             if (msg.value < amountIn) revert TooLittleAmountIn();
-            IWETH(wETH).depositTo{value: (msg.value - amountIn)}(msg.sender);
+            safeTransferETH(msg.sender, msg.value - amountIn);
         }
-
         _transfer(params.tokenIn, msg.sender, params.pool, amountIn);
 
         IConcentratedLiquidityPool pool = IConcentratedLiquidityPool(params.pool);
