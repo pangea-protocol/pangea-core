@@ -32,6 +32,7 @@ import "../../libraries/UnsafeMath.sol";
 import "../../libraries/DyDxMath.sol";
 import "../../libraries/FeeLib.sol";
 import "../../libraries/FixedPoint.sol";
+import "../../libraries/Ticks.sol";
 import "../common/libraries/RewardTicks.sol";
 import "../miningPool/interfaces/IMiningPoolStruct.sol";
 import "./interfaces/IYieldToken.sol";
@@ -518,8 +519,12 @@ contract YieldPool is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolF
             cache.nextTickToCross,
             secondsGrowthGlobal,
             cache.currentLiquidity,
-            zeroForOne ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 + _yieldGrowthGlobal1 : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0 + _yieldGrowthGlobal0,
-            zeroForOne ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 + _yieldGrowthGlobal0 : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1 + _yieldGrowthGlobal1,
+            zeroForOne
+                ? cache.swapFeeGrowthGlobalA + airdropGrowthGlobal1 + _yieldGrowthGlobal1
+                : cache.swapFeeGrowthGlobalA + airdropGrowthGlobal0 + _yieldGrowthGlobal0,
+            zeroForOne
+                ? cache.swapFeeGrowthGlobalB + airdropGrowthGlobal0 + _yieldGrowthGlobal0
+                : cache.swapFeeGrowthGlobalB + airdropGrowthGlobal1 + _yieldGrowthGlobal1,
             cachedRewardGrowthGlobal,
             zeroForOne,
             tickSpacing
