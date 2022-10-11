@@ -2,10 +2,6 @@
 
 pragma solidity >=0.8.0;
 
-import "./IMasterDeployer.sol";
-
-//import "../libraries/Ticks.sol";
-
 /// @notice concentrated liquidity pool contract Structs.
 interface IConcentratedLiquidityPoolStruct {
     struct Tick {
