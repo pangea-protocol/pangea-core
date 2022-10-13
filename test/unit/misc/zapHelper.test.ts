@@ -149,7 +149,6 @@ describe("ZAP:HELPER", function () {
     });
   }
 
-
   async function addLiquidity(lowerTick: number, upperTick: number) {
     const amount0Desired = ethers.utils.parseEther("100");
     await token0.mint(liquidityProvider.address, amount0Desired.mul(4));

@@ -2,7 +2,8 @@ import { ethers, network } from "hardhat";
 import {
   ERC20Test,
   MasterDeployer,
-  MiningPoolManager, MockYToken,
+  MiningPoolManager,
+  MockYToken,
   PoolRouter,
   YieldPool,
   YieldPoolFactory,
@@ -70,9 +71,10 @@ describe("YieldPool TEST", function () {
     KLY = (await Token.deploy("KLY", "KLY", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    const [tokenN0Address, tokenN1Address] = KLAY.address.toLowerCase() < stKLAY.address.toLowerCase()
+    const [tokenN0Address, tokenN1Address] =
+      KLAY.address.toLowerCase() < stKLAY.address.toLowerCase()
         ? [KLAY.address, stKLAY.address]
-        : [stKLAY.address, KLAY.address]
+        : [stKLAY.address, KLAY.address];
 
     await poolFactory.setAvailableParameter(
       tokenN0Address,
@@ -103,13 +105,11 @@ describe("YieldPool TEST", function () {
     )[0];
     pool = await ethers.getContractAt<YieldPool>("YieldPool", poolAddress);
 
-    await KLY.mint(
-      airdrop.address,
-      ethers.constants.MaxUint256.div(10)
+    await KLY.mint(airdrop.address, ethers.constants.MaxUint256.div(10));
+    await KLY.connect(airdrop).approve(
+      poolAddress,
+      ethers.constants.MaxUint256
     );
-    await KLY
-      .connect(airdrop)
-      .approve(poolAddress, ethers.constants.MaxUint256);
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -131,12 +131,16 @@ describe("YieldPool TEST", function () {
 
   async function clearBalance() {
     await KLAY.burnAll(trader.address);
-    await stKLAY.connect(trader).unstake(await stKLAY.balanceOf(trader.address));
+    await stKLAY
+      .connect(trader)
+      .unstake(await stKLAY.balanceOf(trader.address));
   }
 
   async function clearLPBalance() {
     await KLAY.burnAll(liquidityProvider.address);
-    await stKLAY.connect(liquidityProvider).unstake(await stKLAY.balanceOf(liquidityProvider.address));
+    await stKLAY
+      .connect(liquidityProvider)
+      .unstake(await stKLAY.balanceOf(liquidityProvider.address));
   }
 
   async function swapKLAY2stKLAY(amountIn: BigNumber) {
@@ -147,7 +151,7 @@ describe("YieldPool TEST", function () {
     await router.connect(trader).exactInputSingle({
       tokenIn: KLAY.address,
       amountIn,
-      amountOutMinimum:0,
+      amountOutMinimum: 0,
       pool: pool.address,
       to: trader.address,
       unwrap: false,
@@ -155,13 +159,13 @@ describe("YieldPool TEST", function () {
   }
 
   async function swapstKLAY2KLAY(amountIn: BigNumber) {
-    await stKLAY.connect(trader).stake({value:amountIn});
+    await stKLAY.connect(trader).stake({ value: amountIn });
     await stKLAY.connect(trader).approve(router.address, amountIn);
 
     await router.connect(trader).exactInputSingle({
       tokenIn: stKLAY.address,
       amountIn,
-      amountOutMinimum:0,
+      amountOutMinimum: 0,
       pool: pool.address,
       to: trader.address,
       unwrap: false,
@@ -177,11 +181,12 @@ describe("YieldPool TEST", function () {
 
     const amountDesired = ethers.utils.parseEther("100").mul(multiplier);
     await KLAY.mint(liquidityProvider.address, amountDesired);
-    await KLAY
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amountDesired);
+    await KLAY.connect(liquidityProvider).approve(
+      poolManager.address,
+      amountDesired
+    );
 
-    await stKLAY.connect(liquidityProvider).stake({value:amountDesired});
+    await stKLAY.connect(liquidityProvider).stake({ value: amountDesired });
     await stKLAY
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -223,11 +228,12 @@ describe("YieldPool TEST", function () {
     await clearBalance();
 
     await KLAY.mint(liquidityProvider.address, amountDesired);
-    await KLAY
-      .connect(liquidityProvider)
-      .approve(poolManager.address, amountDesired);
+    await KLAY.connect(liquidityProvider).approve(
+      poolManager.address,
+      amountDesired
+    );
 
-    await stKLAY.connect(liquidityProvider).stake({value:amountDesired});
+    await stKLAY.connect(liquidityProvider).stake({ value: amountDesired });
     await stKLAY
       .connect(liquidityProvider)
       .approve(poolManager.address, amountDesired);
@@ -266,7 +272,6 @@ describe("YieldPool TEST", function () {
    * > 유동성을 공급한 포지션이 존재하였을 때, 납입한 유동성과 예치한 시간에 비례하여 KLY가 올바르게 분배되는가?
    */
   describe("# KLY 분배 시나리오 테스트", async () => {
-
     /*
      *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
      * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
@@ -305,15 +310,19 @@ describe("YieldPool TEST", function () {
 
       // 포지션 2번이 받을 수 있는 리워드의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp2.positionId);
 
       // 두 포지션 모두 제공된 리워드의 절받을 가져감
       const allocatedReward = givenReward.div(2);
 
       // 받은 리워드는 제공된 리워드 절반
-      expect(lp1Reward.rewardAmount.sub(allocatedReward).abs()).to.be.lt(DUST_VALUE_LIMIT);
-      expect(lp2Reward.rewardAmount.sub(allocatedReward).abs()).to.be.lt(DUST_VALUE_LIMIT);
+      expect(lp1Reward.rewardAmount.sub(allocatedReward).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
+      expect(lp2Reward.rewardAmount.sub(allocatedReward).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
     });
 
     /*
@@ -326,41 +335,47 @@ describe("YieldPool TEST", function () {
     it("In Range 포지션과 out Range 포지션 간의 리워드 분배 비교", async () => {
       // 동일한 크기의 두개 포지션을 생성합니다.
       const lp1 = await mintNewPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
-      const lp2 = await mintNewPosition(-10 * TICK_SPACING, -6 * TICK_SPACING, 1);
+      const lp2 = await mintNewPosition(
+        -10 * TICK_SPACING,
+        -6 * TICK_SPACING,
+        1
+      );
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
 
       // 에어드랍을 수행합니다.
       const givenAirdropStartTime =
-          (await ethers.provider.getBlock("latest")).timestamp + 3600;
+        (await ethers.provider.getBlock("latest")).timestamp + 3600;
       const givenAirdropPeriod = WEEK;
       const givenReward = ethers.utils.parseEther("12");
       await pool
-          .connect(airdrop)
-          .depositAirdropAndReward(
-              0,
-              0,
-              givenReward,
-              givenAirdropStartTime,
-              givenAirdropPeriod
-          );
+        .connect(airdrop)
+        .depositAirdropAndReward(
+          0,
+          0,
+          givenReward,
+          givenAirdropStartTime,
+          givenAirdropPeriod
+        );
 
       // 에어드랍의 분배가 종료되었습니다.
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod);
 
       // 포지션 1번이 받을 수 있는 KLY 리워드의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 KLY 리워드의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp2.positionId);
 
       // in range 포지션은 제공된 KLY 모두 수취
-      expect(lp1Reward.rewardAmount.sub(givenReward).abs()).to.be.lt(DUST_VALUE_LIMIT);
+      expect(lp1Reward.rewardAmount.sub(givenReward).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
       // out range 포지션은 KLY가 전혀 없음
-      expect(lp2Reward.rewardAmount).to.be.eq(0)
+      expect(lp2Reward.rewardAmount).to.be.eq(0);
     });
 
     /*
@@ -378,38 +393,42 @@ describe("YieldPool TEST", function () {
 
       // 에어드랍을 수행합니다.
       const givenAirdropStartTime =
-          (await ethers.provider.getBlock("latest")).timestamp + 3600;
+        (await ethers.provider.getBlock("latest")).timestamp + 3600;
       const givenAirdropPeriod = WEEK;
       const givenReward = ethers.utils.parseEther("12");
       await pool
-          .connect(airdrop)
-          .depositAirdropAndReward(
-              0,
-              0,
-              givenReward,
-              givenAirdropStartTime,
-              givenAirdropPeriod
-          );
+        .connect(airdrop)
+        .depositAirdropAndReward(
+          0,
+          0,
+          givenReward,
+          givenAirdropStartTime,
+          givenAirdropPeriod
+        );
 
       // 에어드랍의 분배가 종료되었습니다.
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod);
 
       // 포지션 1번이 받을 수 있는 KLY 리워드의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 KLY 리워드의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp2.positionId);
 
       // 두 포지션의 리워드는 1:2의 비율로 가져감
       const allocatedReward0 = givenReward.div(3);
       const allocatedReward1 = givenReward.mul(2).div(3);
 
-      expect(lp1Reward.rewardAmount.sub(allocatedReward0).abs()).to.be.lt(DUST_VALUE_LIMIT);
-      expect(lp2Reward.rewardAmount.sub(allocatedReward1).abs()).to.be.lt(DUST_VALUE_LIMIT);
+      expect(lp1Reward.rewardAmount.sub(allocatedReward0).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
+      expect(lp2Reward.rewardAmount.sub(allocatedReward1).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
     });
 
     /*
@@ -426,24 +445,28 @@ describe("YieldPool TEST", function () {
     it("시간에 따른 에어드랍 분배 계산", async () => {
       // 동일한 크기의 두개 포지션을 생성합니다.
       const lp1 = await mintNewPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
-      const lp2 = await mintNewPosition(-10 * TICK_SPACING, -6 * TICK_SPACING, 1);
+      const lp2 = await mintNewPosition(
+        -10 * TICK_SPACING,
+        -6 * TICK_SPACING,
+        1
+      );
 
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
 
       // 에어드랍을 수행합니다.
       const givenAirdropStartTime =
-          (await ethers.provider.getBlock("latest")).timestamp + 3600;
+        (await ethers.provider.getBlock("latest")).timestamp + 3600;
       const givenAirdropPeriod = WEEK;
       const givenReward = ethers.utils.parseEther("12");
       await pool
-          .connect(airdrop)
-          .depositAirdropAndReward(
-              0,
-              0,
-              givenReward,
-              givenAirdropStartTime,
-              givenAirdropPeriod
-          );
+        .connect(airdrop)
+        .depositAirdropAndReward(
+          0,
+          0,
+          givenReward,
+          givenAirdropStartTime,
+          givenAirdropPeriod
+        );
 
       // 에어드랍의 절반 지나감
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod / 2);
@@ -451,10 +474,10 @@ describe("YieldPool TEST", function () {
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-6 * TICK_SPACING);
       const inputAmount = await getDx(
-          lp1.liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        lp1.liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
 
       // 스왑 수행 (LP1의 포지션에서 LP2의 포지션 쪽으로 가격이 벗어남)
@@ -463,27 +486,36 @@ describe("YieldPool TEST", function () {
       } else {
         await swapstKLAY2KLAY(inputAmount);
       }
-      const swapTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const swapTimestamp = (await ethers.provider.getBlock("latest"))
+        .timestamp;
 
       // 에어드랍이 완전히 지나감
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod);
 
       // 포지션 1번이 받을 수 있는 KLY 리워드의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 KLY 리워드의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp2.positionId);
 
       // 두 포지션의 리워드는 시간에 비례하여 분배
-      const allocatedReward0 = givenReward.mul(swapTimestamp - givenAirdropStartTime).div(givenAirdropPeriod);
-      const allocatedReward1 = givenReward.mul(givenAirdropStartTime + givenAirdropPeriod - swapTimestamp).div(givenAirdropPeriod);
+      const allocatedReward0 = givenReward
+        .mul(swapTimestamp - givenAirdropStartTime)
+        .div(givenAirdropPeriod);
+      const allocatedReward1 = givenReward
+        .mul(givenAirdropStartTime + givenAirdropPeriod - swapTimestamp)
+        .div(givenAirdropPeriod);
 
-      expect(lp1Reward.rewardAmount.sub(allocatedReward0).abs()).to.be.lt(DUST_VALUE_LIMIT);
-      expect(lp2Reward.rewardAmount.sub(allocatedReward1).abs()).to.be.lt(DUST_VALUE_LIMIT);
+      expect(lp1Reward.rewardAmount.sub(allocatedReward0).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
+      expect(lp2Reward.rewardAmount.sub(allocatedReward1).abs()).to.be.lt(
+        DUST_VALUE_LIMIT
+      );
     });
 
     /*
@@ -497,24 +529,28 @@ describe("YieldPool TEST", function () {
      */
     it("유동성이 없었을 때, 발생했던 에어드랍 물량 이월", async () => {
       // 동일한 크기의 두개 포지션을 생성합니다.
-      const lp2 = await mintNewPosition(-10 * TICK_SPACING, -6 * TICK_SPACING, 1);
+      const lp2 = await mintNewPosition(
+        -10 * TICK_SPACING,
+        -6 * TICK_SPACING,
+        1
+      );
 
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
 
       // 에어드랍을 수행합니다.
       const givenAirdropStartTime =
-          (await ethers.provider.getBlock("latest")).timestamp + 3600;
+        (await ethers.provider.getBlock("latest")).timestamp + 3600;
       const givenAirdropPeriod = WEEK;
       const givenReward = ethers.utils.parseEther("12");
       await pool
-          .connect(airdrop)
-          .depositAirdropAndReward(
-              0,
-              0,
-              givenReward,
-              givenAirdropStartTime,
-              givenAirdropPeriod
-          );
+        .connect(airdrop)
+        .depositAirdropAndReward(
+          0,
+          0,
+          givenReward,
+          givenAirdropStartTime,
+          givenAirdropPeriod
+        );
 
       // 에어드랍의 절반 지나감
       await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod / 2);
@@ -522,10 +558,10 @@ describe("YieldPool TEST", function () {
       const currentPrice = await getPriceAtTick(-6 * TICK_SPACING);
       const targetPrice = await getPriceAtTick(-7 * TICK_SPACING);
       const inputAmount = await getDx(
-          lp2.liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        lp2.liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
 
       // 스왑 수행 (LP1의 포지션에서 LP2의 포지션 쪽으로 가격이 벗어남)
@@ -540,10 +576,13 @@ describe("YieldPool TEST", function () {
 
       // 포지션 2번이 받을 수 있는 KLY 리워드의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionRewardAmount(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionRewardAmount(lp2.positionId);
 
-      expect(lp2Reward.rewardAmount).to.be.closeTo(givenReward, DUST_VALUE_LIMIT);
+      expect(lp2Reward.rewardAmount).to.be.closeTo(
+        givenReward,
+        DUST_VALUE_LIMIT
+      );
     });
   });
 
@@ -553,7 +592,6 @@ describe("YieldPool TEST", function () {
    *
    */
   describe("# stKLAY 분배 시나리오 테스트", async () => {
-
     /*
      *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
      * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
@@ -569,32 +607,47 @@ describe("YieldPool TEST", function () {
 
       // increaseTotalStaking을 통해 리워드 늘림
       const givenReward = ethers.utils.parseEther("12");
-      await stKLAY.increaseTotalStaking(givenReward)
+      await stKLAY.increaseTotalStaking(givenReward);
 
       // 포지션 1번이 받을 수 있는 stKLAY의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 stKLAY의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp2.positionId);
 
       const allocatedReward = givenReward.mul(9).div(10).div(2); // 프로토콜 수수료 = 10%
 
       if ((await pool.token0()).toLowerCase() == KLAY.address.toLowerCase()) {
-        expect(lp1Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
+        expect(lp1Reward.token1amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token1amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
       } else {
-        expect(lp1Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
+        expect(lp1Reward.token0amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token0amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
       }
 
-      await poolManager.connect(liquidityProvider).collect(lp1.positionId, liquidityProvider.address, false);
-      await poolManager.connect(liquidityProvider).collect(lp2.positionId, liquidityProvider.address, false);
-    })
-
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp1.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp2.positionId, liquidityProvider.address, false);
+    });
 
     /*
      *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
@@ -611,30 +664,46 @@ describe("YieldPool TEST", function () {
 
       // increaseTotalStaking을 통해 리워드 늘림
       const givenReward = ethers.utils.parseEther("12");
-      await stKLAY.increaseTotalStaking(givenReward)
+      await stKLAY.increaseTotalStaking(givenReward);
 
       // 포지션 1번이 받을 수 있는 stKLAY의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 stKLAY의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp2.positionId);
 
       const allocatedReward = givenReward.mul(9).div(10); // 프로토콜 수수료 = 10%
 
       if ((await pool.token0()).toLowerCase() == KLAY.address.toLowerCase()) {
-        expect(lp1Reward.token1amount).to.be.closeTo(allocatedReward.div(3), DUST_VALUE_LIMIT)
-        expect(lp2Reward.token1amount).to.be.closeTo(allocatedReward.mul(2).div(3), DUST_VALUE_LIMIT)
+        expect(lp1Reward.token1amount).to.be.closeTo(
+          allocatedReward.div(3),
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token1amount).to.be.closeTo(
+          allocatedReward.mul(2).div(3),
+          DUST_VALUE_LIMIT
+        );
       } else {
-        expect(lp1Reward.token0amount).to.be.closeTo(allocatedReward.div(3), DUST_VALUE_LIMIT)
-        expect(lp2Reward.token0amount).to.be.closeTo(allocatedReward.mul(2).div(3), DUST_VALUE_LIMIT)
+        expect(lp1Reward.token0amount).to.be.closeTo(
+          allocatedReward.div(3),
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token0amount).to.be.closeTo(
+          allocatedReward.mul(2).div(3),
+          DUST_VALUE_LIMIT
+        );
       }
 
-      await poolManager.connect(liquidityProvider).collect(lp1.positionId, liquidityProvider.address, false);
-      await poolManager.connect(liquidityProvider).collect(lp2.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp1.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp2.positionId, liquidityProvider.address, false);
     });
 
     /*
@@ -647,35 +716,55 @@ describe("YieldPool TEST", function () {
     it("out Of Range와 In Range 두 포지션에서의 stKLAY 분배", async () => {
       // 동일한 크기의 두개 포지션을 생성합니다.
       const lp1 = await mintNewPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
-      const lp2 = await mintNewPosition(-10 * TICK_SPACING, -5 * TICK_SPACING, 1);
+      const lp2 = await mintNewPosition(
+        -10 * TICK_SPACING,
+        -5 * TICK_SPACING,
+        1
+      );
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
 
       // increaseTotalStaking을 통해 리워드 늘림
       const givenReward = ethers.utils.parseEther("12");
-      await stKLAY.increaseTotalStaking(givenReward)
+      await stKLAY.increaseTotalStaking(givenReward);
 
       // 포지션 1번이 받을 수 있는 stKLAY의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 stKLAY의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp2.positionId);
 
       const allocatedReward = givenReward.mul(9).div(10); // 프로토콜 수수료 = 10%
 
       if ((await pool.token0()).toLowerCase() == KLAY.address.toLowerCase()) {
-        expect(lp1Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token1amount).to.be.closeTo(BigNumber.from(0), DUST_VALUE_LIMIT)
+        expect(lp1Reward.token1amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token1amount).to.be.closeTo(
+          BigNumber.from(0),
+          DUST_VALUE_LIMIT
+        );
       } else {
-        expect(lp1Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token0amount).to.be.closeTo(BigNumber.from(0), DUST_VALUE_LIMIT)
+        expect(lp1Reward.token0amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token0amount).to.be.closeTo(
+          BigNumber.from(0),
+          DUST_VALUE_LIMIT
+        );
       }
 
-      await poolManager.connect(liquidityProvider).collect(lp1.positionId, liquidityProvider.address, false);
-      await poolManager.connect(liquidityProvider).collect(lp2.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp1.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp2.positionId, liquidityProvider.address, false);
     });
 
     /*
@@ -690,26 +779,29 @@ describe("YieldPool TEST", function () {
      *
      * 에어드랍 물량의 절반은 LP1에 분배 (절반 시간동안 LP1에 있었기 떄문)
      * 남은 절반은 LP2에 분배
-    */
+     */
     it("스왑 후, 두 포지션에서의 stKLAY 분배", async () => {
       const lp1 = await mintNewPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
-      const lp2 = await mintNewPosition(-10 * TICK_SPACING, -5 * TICK_SPACING, 1);
+      const lp2 = await mintNewPosition(
+        -10 * TICK_SPACING,
+        -5 * TICK_SPACING,
+        1
+      );
       await clearLPBalance(); // 계산을 위해, 밸런스 삭제
 
       // [1] increaseTotalStaking을 통해 리워드 늘림
       const givenReward = ethers.utils.parseEther("12");
-      await stKLAY.increaseTotalStaking(givenReward)
+      await stKLAY.increaseTotalStaking(givenReward);
 
       // [2] 스왑 처리
       const currentPrice = await getPriceAtTick(0);
       const targetPrice = await getPriceAtTick(-6 * TICK_SPACING);
       const inputAmount = await getDx(
-          lp1.liquidity,
-          targetPrice,
-          currentPrice,
-          true
+        lp1.liquidity,
+        targetPrice,
+        currentPrice,
+        true
       );
-
 
       // 스왑 수행 (LP1의 포지션에서 LP2의 포지션 쪽으로 가격이 벗어남)
       if ((await pool.token0()).toLowerCase() == KLAY.address) {
@@ -720,49 +812,79 @@ describe("YieldPool TEST", function () {
 
       await clearBalance();
 
-
       // [3]  increaseTotalStaking을 통해 리워드 늘림
-      await stKLAY.increaseTotalStaking(givenReward)
+      await stKLAY.increaseTotalStaking(givenReward);
 
       // 포지션 1번이 받을 수 있는 stKLAY의 크기
       const lp1Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp1.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp1.positionId);
 
       // 포지션 2번이 받을 수 있는 stKLAY의 크기
       const lp2Reward = await poolManager
-          .connect(liquidityProvider)
-          .positionFees(lp2.positionId);
+        .connect(liquidityProvider)
+        .positionFees(lp2.positionId);
 
       const allocatedReward = givenReward.mul(9).div(10); // 프로토콜 수수료 = 10%
 
       if ((await pool.token0()).toLowerCase() == KLAY.address.toLowerCase()) {
-        expect(lp1Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token1amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
+        expect(lp1Reward.token1amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token1amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
       } else {
-        expect(lp1Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
-        expect(lp2Reward.token0amount).to.be.closeTo(allocatedReward, DUST_VALUE_LIMIT)
+        expect(lp1Reward.token0amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
+        expect(lp2Reward.token0amount).to.be.closeTo(
+          allocatedReward,
+          DUST_VALUE_LIMIT
+        );
       }
 
-      await poolManager.connect(liquidityProvider).collect(lp1.positionId, liquidityProvider.address, false);
-      await poolManager.connect(liquidityProvider).collect(lp2.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp1.positionId, liquidityProvider.address, false);
+      await poolManager
+        .connect(liquidityProvider)
+        .collect(lp2.positionId, liquidityProvider.address, false);
     });
 
     it("생성 소각 반복", async () => {
       // [1] increaseTotalStaking을 통해 share와 balance의 차이 발생시키기
-      await stKLAY.connect(trader).stake({value:ethers.utils.parseEther("5012.381040013000129")})
-      await stKLAY.increaseTotalStaking(ethers.utils.parseEther("1.1219210370101"))
+      await stKLAY
+        .connect(trader)
+        .stake({ value: ethers.utils.parseEther("5012.381040013000129") });
+      await stKLAY.increaseTotalStaking(
+        ethers.utils.parseEther("1.1219210370101")
+      );
 
-      for (let i=0; i < 20; i++) {
+      for (let i = 0; i < 20; i++) {
         // [2] 포지션 생성
         let lp1 = await mintNewPosition(-4 * TICK_SPACING, 5 * TICK_SPACING, 1);
         await clearLPBalance();
 
         // [3] staking
-        await stKLAY.increaseTotalStaking(randomBN(ethers.utils.parseEther('0.001')));
+        await stKLAY.increaseTotalStaking(
+          randomBN(ethers.utils.parseEther("0.001"))
+        );
 
         // [4] 모두 소각
-        await poolManager.connect(liquidityProvider).burn(lp1.positionId, lp1.liquidity, liquidityProvider.address, 0, 0, false);
+        await poolManager
+          .connect(liquidityProvider)
+          .burn(
+            lp1.positionId,
+            lp1.liquidity,
+            liquidityProvider.address,
+            0,
+            0,
+            false
+          );
         await clearLPBalance();
 
         await pool.collectProtocolFee();

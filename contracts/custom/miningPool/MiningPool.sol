@@ -32,6 +32,7 @@ import "../../libraries/UnsafeMath.sol";
 import "../../libraries/DyDxMath.sol";
 import "../../libraries/FeeLib.sol";
 import "../../libraries/FixedPoint.sol";
+import "../../libraries/Ticks.sol";
 import "../common/libraries/RewardTicks.sol";
 import "./interfaces/IMiningPoolStruct.sol";
 

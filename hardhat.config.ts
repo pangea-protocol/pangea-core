@@ -51,14 +51,15 @@ const config: HardhatUserConfig = {
     },
     baobab: {
       chainId: 1001,
-      url: 'https://public-node-api.klaytnapi.com/v1/baobab',
+      url: 'https://baobab.ken.stick.us/',
       accounts,
       gasPrice: 250000000000
     },
     cypress: {
       chainId: 8217,
-      url: 'https://public-node-api.klaytnapi.com/v1/cypress',
+      url: 'https://internal.ken.stick.us/',
       accounts,
+      // accounts  :[process.env.DEPLOYER!, process.env.DEV!],
       gasPrice: 250000000000
     },
   },
