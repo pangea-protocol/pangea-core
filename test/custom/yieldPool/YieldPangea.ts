@@ -73,7 +73,7 @@ export class YieldPangea {
     const tickIndexLibrary = await TickIndex.deploy();
     const clpLibs = {};
     clpLibs["RewardTicks"] = tickLibrary.address;
-    const YieldPool = await ethers.getContractFactory("YieldPool", {
+    const YieldPool = await ethers.getContractFactory("YieldPoolV2", {
       libraries: clpLibs,
     });
 
