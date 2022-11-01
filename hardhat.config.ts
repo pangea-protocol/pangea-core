@@ -58,8 +58,8 @@ const config: HardhatUserConfig = {
     cypress: {
       chainId: 8217,
       url: 'https://internal.ken.stick.us/',
-      // accounts,
-      accounts  :[process.env.DEPLOYER!, process.env.DEV!],
+      accounts,
+      // accounts  :[process.env.DEPLOYER!, process.env.DEV!],
       gasPrice: 250000000000
     },
   },
@@ -180,6 +180,15 @@ const config: HardhatUserConfig = {
         }
       },
       "contracts/custom/miningPool/MiningPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        }
+      },
+      "contracts/custom/miningPool/MiningPoolV2.sol": {
         version: "0.8.9",
         settings: {
           optimizer: {

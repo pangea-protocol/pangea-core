@@ -63,7 +63,7 @@ export class MiningPangea {
     const tickIndexLibrary = await TickIndex.deploy();
     const clpLibs = {};
     clpLibs["RewardTicks"] = tickLibrary.address;
-    const MiningPool = await ethers.getContractFactory("MiningPool", {
+    const MiningPool = await ethers.getContractFactory("MiningPoolV2", {
       libraries: clpLibs,
     });
 
