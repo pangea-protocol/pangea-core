@@ -33,12 +33,12 @@ const config: HardhatUserConfig = {
       live: false,
       chainId: 31337,
       saveDeployments: true,
-      tags: ["local"],
+      tags: ["local"]
     },
     hardhat: {
       allowUnlimitedContractSize: true,
       live: false,
-      chainId: 31337,
+      chainId: 8217,
       saveDeployments: true,
       tags: ["test", "local"],
       gasPrice: 250000000000,
@@ -57,9 +57,8 @@ const config: HardhatUserConfig = {
     },
     cypress: {
       chainId: 8217,
-      url: 'https://internal.ken.stick.us/',
+      url: 'https://internal.ken.stick.us',
       accounts,
-      // accounts  :[process.env.DEPLOYER!, process.env.DEV!],
       gasPrice: 250000000000
     },
   },
@@ -124,6 +123,15 @@ const config: HardhatUserConfig = {
             runs: 99999,
           },
         },
+      },
+      {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 99999,
+          },
+        },
       }
     ],
     settings: {
@@ -134,6 +142,15 @@ const config: HardhatUserConfig = {
       }
     },
     overrides: {
+      "contracts/misc/proxy.sol": {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 99999,
+          },
+        }
+      },
       "contracts/pool/PoolFactoryLib.sol": {
         version: "0.8.9",
         settings: {
@@ -170,6 +187,15 @@ const config: HardhatUserConfig = {
           },
         }
       },
+      "contracts/custom/miningPool/MiningPoolV2.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+        }
+      },
       "contracts/custom/miningPool/MiningPoolManager.sol": {
         version: "0.8.9",
         settings: {
@@ -197,6 +223,15 @@ const config: HardhatUserConfig = {
           },
         }
       },
+      "contracts/custom/yieldPool/YieldPoolV2.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+        },
+      }
     }
   },
   dodoc: {

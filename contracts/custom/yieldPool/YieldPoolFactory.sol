@@ -19,6 +19,7 @@ import "../../interfaces/IConcentratedLiquidityPoolFactory.sol";
 import "../common/vendor/EIP173Proxy.sol";
 import "../common/interfaces/IEIP173Proxy.sol";
 import "../common/interfaces/ICustomPool.sol";
+import "../miningPool/interfaces/IProtocolFeeSetter.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
 contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
@@ -34,8 +35,11 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
     mapping(address => bool) public isPool;
 
     address[] private poolArray;
+    uint256 public defaultProtocolFee;
 
     event UpdatePoolImplementation(address previousImplementation, address newImplementation);
+    event UpdateProtocolFee(address pool, uint256 protocolFee);
+    event UpdateDefaultProtocolFee(uint256 protocolFee);
 
     error WrongTokenOrder();
     error UnauthorisedDeployer();
@@ -62,6 +66,8 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
         masterDeployer = _masterDeployer;
         poolLogger = _poolLogger;
         yieldToken = _yieldToken;
+
+        defaultProtocolFee = 1000;
 
         __Ownable_init();
         manager = _msgSender();
@@ -93,6 +99,7 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
 
         IPoolFactoryCallee(pool).setPrice(price);
         IPoolFactoryCallee(pool).registerLogger(poolLogger);
+        IProtocolFeeSetter(pool).setProtocolFee(defaultProtocolFee);
     }
 
     function totalPoolsCount() external view returns (uint256 total) {
@@ -132,6 +139,18 @@ contract YieldPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFacto
 
         bytes memory _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
         availableConfigs[keccak256(_deployData)] = true;
+    }
+
+    function setDefaultProtocolFee(uint256 protocolFee) external onlyManager {
+        defaultProtocolFee = protocolFee;
+
+        emit UpdateDefaultProtocolFee(protocolFee);
+    }
+
+    function setProtocolFee(address pool, uint256 protocolFee) external onlyManager {
+        IProtocolFeeSetter(pool).setProtocolFee(protocolFee);
+
+        emit UpdateProtocolFee(pool, protocolFee);
     }
 
     function setManager(address _manager) external onlyManager {
