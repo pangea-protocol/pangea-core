@@ -58,8 +58,8 @@ const config: HardhatUserConfig = {
     cypress: {
       chainId: 8217,
       url: 'https://internal.ken.stick.us/',
-      accounts,
-      // accounts  :[process.env.DEPLOYER!, process.env.DEV!],
+      // accounts,
+      accounts  :[process.env.DEPLOYER!, process.env.DEV!],
       gasPrice: 250000000000
     },
   },
@@ -124,6 +124,15 @@ const config: HardhatUserConfig = {
             runs: 99999,
           },
         },
+      },
+      {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 99999,
+          },
+        },
       }
     ],
     settings: {
@@ -134,6 +143,15 @@ const config: HardhatUserConfig = {
       }
     },
     overrides: {
+      "contracts/misc/proxy.sol": {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 99999,
+          },
+        }
+      },
       "contracts/pool/PoolFactoryLib.sol": {
         version: "0.8.9",
         settings: {
