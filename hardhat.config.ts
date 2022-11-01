@@ -33,21 +33,9 @@ const config: HardhatUserConfig = {
       live: false,
       chainId: 31337,
       saveDeployments: true,
-      tags: ["local"],
-      accounts: [
-          process.env.DEPLOYER!,
-          process.env.DEV!
-      ]
+      tags: ["local"]
     },
     hardhat: {
-      forking: {
-        url: "http://archive.cypress.klaytn.net:8551",
-        blockNumber: 105369665
-      },
-      mining: {
-        auto: true,
-        interval: 1000
-      },
       allowUnlimitedContractSize: true,
       live: false,
       chainId: 8217,
@@ -70,8 +58,7 @@ const config: HardhatUserConfig = {
     cypress: {
       chainId: 8217,
       url: 'https://internal.ken.stick.us',
-      // accounts,
-      accounts  :[process.env.DEPLOYER!, process.env.DEV!],
+      accounts,
       gasPrice: 250000000000
     },
   },
