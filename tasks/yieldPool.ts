@@ -1,5 +1,11 @@
 import { task } from "hardhat/config";
-import {IERC20Metadata__factory, MasterDeployer, MiningPoolFactory, YieldPoolFactory} from "../types";
+import {
+  IConcentratedLiquidityPool__factory,
+  IERC20Metadata__factory,
+  MasterDeployer,
+  MiningPoolFactory,
+  YieldPoolFactory
+} from "../types";
 import {BigNumber} from "ethers";
 import {doTransaction} from "../deploy/utils";
 
@@ -68,34 +74,34 @@ task("miningPool:create", "create custom Pool: miningPool")
     .addPositionalParam('rewardTokenAddress')
     .addPositionalParam('swapFee')
     .addPositionalParam('tickSpacing')
-    .addPositionalParam('tokenAmount')
-    .addPositionalParam('yieldTokenAmount')
+    .addPositionalParam('token0Amount')
+    .addPositionalParam('token1Amount')
     .setAction(async (
-        {token0Address, token1Address, rewardTokenAddress, swapFee, tickSpacing, tokenAmount, yieldTokenAmount},
+        {token0Address, token1Address, rewardTokenAddress, swapFee, tickSpacing, token0Amount, token1Amount},
         {ethers}) => {
       const [deployer] = await ethers.getSigners();
 
-      const masterDeployer = await ethers.getContract('MasterDeployer') as MasterDeployer;
-      const miningPoolFactory = await ethers.getContract("MiningPoolFactory") as MiningPoolFactory;
+      const masterDeployer = await ethers.getContract('MasterDeployer', deployer) as MasterDeployer;
+      const miningPoolFactory = await ethers.getContract("MiningPoolFactory", deployer) as MiningPoolFactory;
 
-      const token0 = await IERC20Metadata__factory.connect(token0Address, ethers.provider);
-      const token1 = await IERC20Metadata__factory.connect(token1Address, ethers.provider);
+      const token0 = await IERC20Metadata__factory.connect(token0Address, deployer);
+      const token1 = await IERC20Metadata__factory.connect(token1Address, deployer);
 
       let price;
       if (token0Address.toLowerCase() < token1Address.toLowerCase()) {
         price = calculatePrice(
-            ethers.utils.parseUnits(tokenAmount, await token0.decimals()),
-            ethers.utils.parseUnits(yieldTokenAmount, await token1.decimals())
+            ethers.utils.parseUnits(token0Amount, await token0.decimals()),
+            ethers.utils.parseUnits(token1Amount, await token1.decimals())
         );
       } else {
         [token0Address, token1Address] = [token1Address, token0Address];
         price = calculatePrice(
-            ethers.utils.parseUnits(yieldTokenAmount, await token1.decimals()),
-            ethers.utils.parseUnits(tokenAmount, await token0.decimals()),
+            ethers.utils.parseUnits(token1Amount, await token1.decimals()),
+            ethers.utils.parseUnits(token0Amount, await token0.decimals()),
         );
       }
 
-      await doTransaction(miningPoolFactory.connect(deployer).setAvailableParameter(
+      await doTransaction(miningPoolFactory.setAvailableParameter(
           token0Address,
           token1Address,
           rewardTokenAddress,
@@ -103,15 +109,56 @@ task("miningPool:create", "create custom Pool: miningPool")
           tickSpacing
       ));
 
-      await doTransaction(masterDeployer.connect(deployer).deployPool(
+      await doTransaction(masterDeployer.deployPool(
           miningPoolFactory.address,
           ethers.utils.defaultAbiCoder.encode(
               ["address", "address", "address", "uint24", "uint160", "uint24"],
               [token0Address, token1Address, rewardTokenAddress, swapFee, price, tickSpacing]
           ))
       );
+      const poolAddress = await masterDeployer.getPoolAddress((await masterDeployer.totalPoolsCount()).toNumber() - 1);
 
-      console.log("complete");
+      console.log(`poolAddress : ${poolAddress}`)
+    });
+
+
+  task("miningPool:mirror", "create custom Pool: miningPool")
+      .addPositionalParam("targetPoolAddress")
+    .setAction(async (
+        {targetPoolAddress},
+        {ethers}) => {
+      const [deployer] = await ethers.getSigners();
+      const rewardTokenAddress = "0xB49E754228bc716129E63b1a7b0b6cf27299979e"
+
+      const masterDeployer = await ethers.getContract('MasterDeployer', deployer) as MasterDeployer;
+      const miningPoolFactory = await ethers.getContract("MiningPoolFactory", deployer) as MiningPoolFactory;
+
+      const targetPool = IConcentratedLiquidityPool__factory.connect(targetPoolAddress, ethers.provider);
+
+      const token0Address = await targetPool.token0();
+      const token1Address = await targetPool.token1();
+      const price = await targetPool.price();
+      const swapFee = await targetPool.swapFee();
+      const tickSpacing = swapFee == 2000 ? 20 : 2;
+
+      await doTransaction(miningPoolFactory.setAvailableParameter(
+          token0Address,
+          token1Address,
+          rewardTokenAddress,
+          swapFee,
+          tickSpacing
+      ));
+
+      await doTransaction(masterDeployer.deployPool(
+          miningPoolFactory.address,
+          ethers.utils.defaultAbiCoder.encode(
+              ["address", "address", "address", "uint24", "uint160", "uint24"],
+              [token0Address, token1Address, rewardTokenAddress, swapFee, price, tickSpacing]
+          ))
+      );
+      const poolAddress = await masterDeployer.getPoolAddress((await masterDeployer.totalPoolsCount()).toNumber() - 1);
+
+      console.log(`poolAddress : ${poolAddress}`)
     });
 
 

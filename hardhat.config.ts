@@ -37,6 +37,9 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       allowUnlimitedContractSize: true,
+      forking: {
+        url: "https://internal.ken.stick.us",
+      },
       live: false,
       chainId: 8217,
       saveDeployments: true,
@@ -45,6 +48,10 @@ const config: HardhatUserConfig = {
       accounts: {
         // 1,000,000,000
         accountsBalance: "1000000000000000000000000000000000000000"
+      },
+      mining: {
+        auto: true,
+        interval: 1000
       },
       // Solidity-coverage overrides gasPrice to 1 which is not compatible with EIP1559
       hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",
