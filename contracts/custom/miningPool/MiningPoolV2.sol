@@ -348,6 +348,7 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
 
         rewardAmount = _collectReward(msg.sender, lower, upper, desiredReward);
 
+        if (rewardToken == address(0)) return rewardAmount;
         _transfer(rewardToken, rewardAmount, msg.sender);
     }
 
