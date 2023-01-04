@@ -73,6 +73,15 @@ abstract contract PangeaERC721 is ERC721EnumerableUpgradeable {
         _burn(tokenId);
     }
 
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        require(to != 0x000000000000000000000000000000000000dEaD, "ERC721: transfer to the klip DEAD address");
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
     function totalSupply() public view override returns (uint256) {
         return nftCount.minted - nftCount.burned;
     }
