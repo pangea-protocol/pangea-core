@@ -794,6 +794,19 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
       ).to.be.reverted;
     });
 
+    it("REVERT CASE : BURN TO KLIP DEAD ADDRESS", async () => {
+      const case1 = await mintPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);
+      await expect(
+        poolManager
+          .connect(liquidityProvider)
+          .transferFrom(
+            liquidityProvider.address,
+            "0x000000000000000000000000000000000000dEaD",
+            case1.positionId
+          )
+      ).to.be.revertedWith("ERC721: transfer to the klip DEAD address");
+    });
+
     it("TEST 1)", async () => {
       // GIVEN
       const case1 = await mintPosition(-4 * TICK_SPACING, 3 * TICK_SPACING, 1);

@@ -11,7 +11,7 @@ import {
 import { SignerWithAddress } from "hardhat-deploy-ethers/signers";
 chai.use(smock.matchers);
 
-describe.only("STONE SCHEDULER", async () => {
+describe("STONE SCHEDULER", async () => {
   let _snapshotId: string;
   let snapshotId: string;
   let deployer: SignerWithAddress;
