@@ -56,6 +56,10 @@ const deployFunction: DeployFunction = async function ({
   );
 
   await doTransaction(
+    miningPoolFactory.setPoolImplementation(poolImplementation)
+  );
+
+  await doTransaction(
     miningPoolFactory.setAvailableFeeAndTickSpacing(10_000, 100, true)
   );
   await doTransaction(
@@ -78,6 +82,8 @@ const deployFunction: DeployFunction = async function ({
     "0x3cF6d6825Bea2dA9C8B83a6756c8D7a694930857",
     "0xA35504725c5559fE159c39a6203378e8418c90c4",
     "0x6fd93c41F3348Ec82ddFD8f29531DfA558a85Ffd",
+    "0x2bdB1E9e1fb002C2057912729A6Ac986884b511C",
+    "0xf2dc775cE9Bd8124b68dc6d89227a11D64C9dc88",
   ];
 
   await doTransaction(miningPoolFactory.upgradePools(pools));
