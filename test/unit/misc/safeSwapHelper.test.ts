@@ -122,13 +122,13 @@ describe("SAFESWAP:HELPER", function () {
       .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token0
       .connect(trader)
-      .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .approve(router.address, ethers.constants.MaxUint256);
     await token1
       .connect(trader)
       .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token1
       .connect(trader)
-      .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .approve(router.address, ethers.constants.MaxUint256);
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -1463,12 +1463,13 @@ describe("SAFESWAP:HELPER", function () {
         .connect(trader)
         .callStatic.exactInput({
           tokenIn: token1.address,
-          amountIn: inputAmount,
+          amountIn: inputAmount.div(10),
           amountOutMinimum: 0,
           path: [pool.address, nativePool.address],
           to: trader.address,
           unwrap: true,
         });
+
       const resultExpectOutput = await router
         .connect(trader)
         .callStatic.exactOutput({
