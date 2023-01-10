@@ -19,6 +19,7 @@ import "../../interfaces/IConcentratedLiquidityPoolFactory.sol";
 import "../common/vendor/EIP173Proxy.sol";
 import "../common/interfaces/IEIP173Proxy.sol";
 import "../common/interfaces/ICustomPool.sol";
+import "../../interfaces/IConcentratedLiquidityPool.sol";
 import "./interfaces/IProtocolFeeSetter.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
@@ -30,15 +31,18 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
 
     mapping(address => mapping(address => address[])) public pools;
     mapping(bytes32 => address) public configAddress;
-    mapping(bytes32 => bool) public availableConfigs;
+    mapping(bytes32 => bool) private availableConfigs; // useless fields...
     mapping(address => bool) public isPool;
 
     address[] private poolArray;
     uint256 public defaultProtocolFee;
 
+    mapping(uint24 => mapping(uint24 => bool)) public availableFeeAndTickSpacing;
+
     event UpdatePoolImplementation(address previousImplementation, address newImplementation);
     event UpdateProtocolFee(address pool, uint256 protocolFee);
     event UpdateDefaultProtocolFee(uint256 protocolFee);
+    event UpdateAvailableFeeAndTickSpacing(uint24 fee, uint24 tickSpacing, bool ok);
 
     error WrongTokenOrder();
     error UnauthorisedDeployer();
@@ -46,6 +50,7 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
     error InvalidToken();
     error InvalidConfig();
     error ZeroAddress();
+    error InvalidFeeAndTickSpacing();
 
     modifier onlyManager() {
         if (manager != _msgSender()) revert UnauthorisedManager();
@@ -66,6 +71,12 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
 
         defaultProtocolFee = 1000;
 
+        availableFeeAndTickSpacing[10_000][100] = true; // swapFee = 1.0%  / tickSpacing = 100
+        availableFeeAndTickSpacing[2_000][20] = true; // swapFee = 0.2%  / tickSpacing =  20
+        /// @dev why not set the tick spacing to 1? To avoid truncation errors on the client side(UX).
+        availableFeeAndTickSpacing[600][2] = true; // swapFee = 0.06% / tickSpacing =   2
+        availableFeeAndTickSpacing[100][2] = true; // swapFee = 0.01% / tickSpacing =   2
+
         __Ownable_init();
         manager = _msgSender();
     }
@@ -73,16 +84,28 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
     function deployPool(bytes memory _deployData) external returns (address pool) {
         if (msg.sender != masterDeployer) revert UnauthorisedDeployer();
 
-        (address tokenA, address tokenB, address rewardToken, uint24 swapFee, uint160 price, uint24 tickSpacing) = abi.decode(
+        (address tokenA, address tokenB, uint24 swapFee, uint160 price, uint24 tickSpacing) = abi.decode(
             _deployData,
-            (address, address, address, uint24, uint160, uint24)
+            (address, address, uint24, uint160, uint24)
         );
+
+        if (tokenA > tokenB) revert WrongTokenOrder();
+        if (!availableFeeAndTickSpacing[swapFee][tickSpacing]) revert InvalidFeeAndTickSpacing();
+        address[] memory _pools = pools[tokenA][tokenB];
+
+        for (uint256 i = 0; i < _pools.length; i++) {
+            if (
+                IConcentratedLiquidityPool(_pools[i]).tickSpacing() == tickSpacing &&
+                IConcentratedLiquidityPool(_pools[i]).swapFee() == swapFee
+            ) {
+                revert InvalidConfig();
+            }
+        }
 
         // Strips any extra data.
         // Don't include price in _deployData to enable predictable address calculation.
-        _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
+        _deployData = abi.encode(tokenA, tokenB, address(0), swapFee, tickSpacing);
         bytes32 salt = keccak256(_deployData);
-        if (!availableConfigs[salt]) revert InvalidConfig();
 
         pool = address(new EIP173Proxy{salt: salt}(poolImplementation, address(this), ""));
         ICustomPool(pool).initialize(_deployData, masterDeployer);
@@ -122,18 +145,14 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
         }
     }
 
-    function setAvailableParameter(
-        address tokenA,
-        address tokenB,
-        address rewardToken,
-        uint24 swapFee,
-        uint24 tickSpacing
+    function setAvailableFeeAndTickSpacing(
+        uint24 fee,
+        uint24 tickSpacing,
+        bool ok
     ) external onlyManager {
-        if (tokenA >= tokenB) revert WrongTokenOrder();
-        if (tokenA == rewardToken || tokenB == rewardToken) revert InvalidToken();
+        availableFeeAndTickSpacing[fee][tickSpacing] = ok;
 
-        bytes memory _deployData = abi.encode(tokenA, tokenB, rewardToken, swapFee, tickSpacing);
-        availableConfigs[keccak256(_deployData)] = true;
+        emit UpdateAvailableFeeAndTickSpacing(fee, tickSpacing, ok);
     }
 
     function setDefaultProtocolFee(uint256 protocolFee) external onlyManager {

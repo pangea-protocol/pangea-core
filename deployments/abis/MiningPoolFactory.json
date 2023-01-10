@@ -6,6 +6,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidFeeAndTickSpacing",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidToken",
     "type": "error"
   },
@@ -46,6 +51,31 @@
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint24",
+        "name": "fee",
+        "type": "uint24"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint24",
+        "name": "tickSpacing",
+        "type": "uint24"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "ok",
+        "type": "bool"
+      }
+    ],
+    "name": "UpdateAvailableFeeAndTickSpacing",
     "type": "event"
   },
   {
@@ -102,12 +132,17 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint24",
         "name": "",
-        "type": "bytes32"
+        "type": "uint24"
+      },
+      {
+        "internalType": "uint24",
+        "name": "",
+        "type": "uint24"
       }
     ],
-    "name": "availableConfigs",
+    "name": "availableFeeAndTickSpacing",
     "outputs": [
       {
         "internalType": "bool",
@@ -379,32 +414,22 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "tokenA",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenB",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "rewardToken",
-        "type": "address"
-      },
-      {
         "internalType": "uint24",
-        "name": "swapFee",
+        "name": "fee",
         "type": "uint24"
       },
       {
         "internalType": "uint24",
         "name": "tickSpacing",
         "type": "uint24"
+      },
+      {
+        "internalType": "bool",
+        "name": "ok",
+        "type": "bool"
       }
     ],
-    "name": "setAvailableParameter",
+    "name": "setAvailableFeeAndTickSpacing",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

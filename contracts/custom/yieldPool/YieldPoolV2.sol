@@ -502,9 +502,7 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         _updateSwapFees(zeroForOne, cache.swapFeeGrowthGlobalA, uint128(cache.protocolFee));
 
         if (cache.input > 0) {
-            Tick storage lastTick = zeroForOne
-                ? ticks[ticks[TickMath.MIN_TICK].nextTick]
-                : ticks[ticks[TickMath.MAX_TICK].previousTick];
+            Tick storage lastTick = zeroForOne ? ticks[ticks[TickMath.MIN_TICK].nextTick] : ticks[ticks[TickMath.MAX_TICK].previousTick];
 
             uint256 growthGlobalDelta = FullMath.mulDiv(cache.input, FixedPoint.Q128, lastTick.liquidity);
 
