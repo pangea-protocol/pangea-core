@@ -12,6 +12,11 @@ contract SafeSwapHelper {
         wETH = _wETH;
     }
 
+    /// @notice Calculate the maximum output that can be received when swapped according to the given path.
+    /// @return amountOut the maximum output
+    /// @return price     price after swapping
+    /// @return overInput Check if more input has been given to receive the corresponding amountOut
+    /// @return maximumAmountIn Maximum input that the path can handle
     function calculateExactInput(
         address[] calldata path,
         address tokenIn,
