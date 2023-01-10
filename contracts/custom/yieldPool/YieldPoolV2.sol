@@ -37,7 +37,6 @@ import "../common/libraries/RewardTicks.sol";
 import "../miningPool/interfaces/IMiningPoolStruct.sol";
 import "./interfaces/IYieldToken.sol";
 import "./interfaces/IYieldPoolStruct.sol";
-import "hardhat/console.sol";
 
 /// @notice Custom Pool : Yield pool, it's for liquidity mining using reward token
 contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPRewardCallee, Initializable {
@@ -1207,13 +1206,17 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     function _updateShareAndYBalance(bool _zeroForYield) internal {
         if (_zeroForYield) {
             address token = token0;
-            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
-            reserve0 = uint128(IYieldToken(token).balanceOf(address(this)));
+            shareReserve = uint128(_share(token));
+            reserve0 = uint128(_balance(token));
         } else {
             address token = token1;
-            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
-            reserve1 = uint128(IYieldToken(token).balanceOf(address(this)));
+            shareReserve = uint128(_share(token));
+            reserve1 = uint128(_balance(token));
         }
+    }
+
+    function _share(address token) internal view returns (uint256) {
+        return IYieldToken(token).sharesOf(address(this));
     }
 
     function _getYieldBalance(bool _zeroForYield) internal view returns (uint128) {
