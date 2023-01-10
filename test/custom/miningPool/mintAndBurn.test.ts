@@ -6,6 +6,7 @@ import {
   MiningPoolFactory,
   MiningPoolManager,
   PoolRouter,
+  PositionDashboardV2,
   PositionHelper,
   WETH10,
 } from "../../../types";
@@ -55,6 +56,7 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
   let token1: ERC20Test;
   let rewardToken: ERC20Test;
   let wklay: WETH10;
+  let dashboard: PositionDashboardV2;
 
   before(async () => {
     _snapshotId = await ethers.provider.send("evm_snapshot", []);
@@ -69,6 +71,9 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
     poolManager = pangea.poolManager;
     router = pangea.router;
     wklay = pangea.weth;
+    dashboard = (await (
+      await ethers.getContractFactory("PositionDashboardV2")
+    ).deploy()) as PositionDashboardV2;
 
     // ========= PositionHelper =========
     const Factory = await ethers.getContractFactory("PositionHelper");
@@ -1333,6 +1338,181 @@ describe("Reward Liquidity Pool SCENARIO:MINT_AND_BURN", function () {
 
       expect(expectedFee[0]).to.be.eq(result[0]);
       expect(expectedFee[1]).to.be.eq(result[1]);
+    });
+
+    it("TEST 4) Swap To Minimum Price", async () => {
+      // GIVEN
+      const position = await mintPosition(
+        -4 * TICK_SPACING,
+        3 * TICK_SPACING,
+        1
+      );
+
+      // swap event for fee collecting
+      await swapToken0ToToken1(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+
+      const total = await dashboard.getTotal(
+        poolManager.address,
+        position.positionId
+      );
+
+      const before0 = await token0.balanceOf(liquidityProvider.address);
+      const before1 = await token1.balanceOf(liquidityProvider.address);
+      // WHEN
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
+          position.positionId,
+          position.liquidity,
+          liquidityProvider.address,
+          0,
+          0,
+          false
+        );
+      const after0 = await token0.balanceOf(liquidityProvider.address);
+      const after1 = await token1.balanceOf(liquidityProvider.address);
+      expect(total.amount0).to.be.eq(after0.sub(before0));
+      expect(total.amount1).to.be.eq(after1.sub(before1));
+
+      const [reserve0, reserve1] = await pool.getReserves();
+      const [fee0, fee1] = await pool.getTokenProtocolFees();
+      expect(reserve0).to.be.closeTo(fee0, 1000);
+      expect(reserve1).to.be.closeTo(fee1, 1000);
+    });
+
+    it("TEST 5) Swap To Maximum Price", async () => {
+      // GIVEN
+      const position = await mintPosition(
+        -4 * TICK_SPACING,
+        3 * TICK_SPACING,
+        1
+      );
+      // swap event for fee collecting
+      await swapToken1ToToken0(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+      const total = await dashboard.getTotal(
+        poolManager.address,
+        position.positionId
+      );
+
+      // WHEN
+      const before0 = await token0.balanceOf(liquidityProvider.address);
+      const before1 = await token1.balanceOf(liquidityProvider.address);
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
+          position.positionId,
+          position.liquidity,
+          liquidityProvider.address,
+          0,
+          0,
+          false
+        );
+      const after0 = await token0.balanceOf(liquidityProvider.address);
+      const after1 = await token1.balanceOf(liquidityProvider.address);
+      expect(total.amount0).to.be.eq(after0.sub(before0));
+      expect(total.amount1).to.be.eq(after1.sub(before1));
+
+      const [reserve0, reserve1] = await pool.getReserves();
+      const [fee0, fee1] = await pool.getTokenProtocolFees();
+      expect(reserve0).to.be.closeTo(fee0, 1000);
+      expect(reserve1).to.be.closeTo(fee1, 1000);
+    });
+
+    it("TEST 6) Swap From Minimum Price to Maximum Price", async () => {
+      // GIVEN
+      const position = await mintPosition(
+        -4 * TICK_SPACING,
+        3 * TICK_SPACING,
+        1
+      );
+      // swap event for fee collecting
+      await swapToken0ToToken1(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+
+      await swapToken1ToToken0(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+      const total = await dashboard.getTotal(
+        poolManager.address,
+        position.positionId
+      );
+
+      // WHEN
+      const before0 = await token0.balanceOf(liquidityProvider.address);
+      const before1 = await token1.balanceOf(liquidityProvider.address);
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
+          position.positionId,
+          position.liquidity,
+          liquidityProvider.address,
+          0,
+          0,
+          false
+        );
+      const after0 = await token0.balanceOf(liquidityProvider.address);
+      const after1 = await token1.balanceOf(liquidityProvider.address);
+      expect(total.amount0).to.be.eq(after0.sub(before0));
+      expect(total.amount1).to.be.eq(after1.sub(before1));
+
+      const [reserve0, reserve1] = await pool.getReserves();
+      const [fee0, fee1] = await pool.getTokenProtocolFees();
+      expect(reserve0).to.be.closeTo(fee0, 1000);
+      expect(reserve1).to.be.closeTo(fee1, 1000);
+    });
+
+    it("TEST 7) Swap From Minimum Price to Maximum Price", async () => {
+      // GIVEN
+      const position = await mintPosition(
+        -4 * TICK_SPACING,
+        3 * TICK_SPACING,
+        1
+      );
+      // swap event for fee collecting
+      await swapToken1ToToken0(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+      await swapToken0ToToken1(
+        ethers.utils.parseEther("1000000"),
+        ethers.utils.parseEther("0")
+      );
+      const total = await dashboard.getTotal(
+        poolManager.address,
+        position.positionId
+      );
+
+      // WHEN
+      const before0 = await token0.balanceOf(liquidityProvider.address);
+      const before1 = await token1.balanceOf(liquidityProvider.address);
+      await poolManager
+        .connect(liquidityProvider)
+        .burn(
+          position.positionId,
+          position.liquidity,
+          liquidityProvider.address,
+          0,
+          0,
+          false
+        );
+      const after0 = await token0.balanceOf(liquidityProvider.address);
+      const after1 = await token1.balanceOf(liquidityProvider.address);
+      expect(total.amount0).to.be.eq(after0.sub(before0));
+      expect(total.amount1).to.be.eq(after1.sub(before1));
+
+      const [reserve0, reserve1] = await pool.getReserves();
+      const [fee0, fee1] = await pool.getTokenProtocolFees();
+      expect(reserve0).to.be.closeTo(fee0, 1000);
+      expect(reserve1).to.be.closeTo(fee1, 1000);
     });
   });
 

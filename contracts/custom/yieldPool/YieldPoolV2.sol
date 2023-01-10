@@ -504,8 +504,8 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
 
         if (cache.input > 0) {
             Tick storage lastTick = zeroForOne
-                ? ticks[ticks[cache.nextTickToCross].nextTick]
-                : ticks[ticks[cache.nextTickToCross].previousTick];
+                ? ticks[ticks[TickMath.MIN_TICK].nextTick]
+                : ticks[ticks[TickMath.MAX_TICK].previousTick];
 
             uint256 growthGlobalDelta = FullMath.mulDiv(cache.input, FixedPoint.Q128, lastTick.liquidity);
 

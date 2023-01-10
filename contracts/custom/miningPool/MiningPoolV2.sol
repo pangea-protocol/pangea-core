@@ -188,6 +188,13 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
         logger = IPoolLogger(_logger);
     }
 
+    /// @dev register Reward Token
+    function registerRewardToken(address _token) external {
+        if (msg.sender != factory) revert NotAuthorized();
+        if (rewardToken != address(0)) revert NotAuthorized();
+        rewardToken = _token;
+    }
+
     /// @dev Mints LP tokens - should be called via the CL pool manager contract.
     function mint(MintParams memory mintParams) external lock returns (uint256 liquidityMinted) {
         _ensureTickSpacing(mintParams.lower, mintParams.upper);
