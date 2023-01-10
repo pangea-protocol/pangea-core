@@ -37,6 +37,7 @@ import "../common/libraries/RewardTicks.sol";
 import "../miningPool/interfaces/IMiningPoolStruct.sol";
 import "./interfaces/IYieldToken.sol";
 import "./interfaces/IYieldPoolStruct.sol";
+import "hardhat/console.sol";
 
 /// @notice Custom Pool : Yield pool, it's for liquidity mining using reward token
 contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPRewardCallee, Initializable {
@@ -500,6 +501,22 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
 
         _updateReserves(zeroForOne, uint128(inAmount), amountOut);
         _updateSwapFees(zeroForOne, cache.swapFeeGrowthGlobalA, uint128(cache.protocolFee));
+
+        if (cache.input > 0) {
+            Tick storage lastTick = zeroForOne
+                ? ticks[ticks[cache.nextTickToCross].nextTick]
+                : ticks[ticks[cache.nextTickToCross].previousTick];
+
+            uint256 growthGlobalDelta = FullMath.mulDiv(cache.input, FixedPoint.Q128, lastTick.liquidity);
+
+            if (zeroForOne) {
+                lastTick.feeGrowthOutside0 += growthGlobalDelta;
+                swapFeeGrowthGlobal0 += growthGlobalDelta;
+            } else {
+                lastTick.feeGrowthOutside1 += growthGlobalDelta;
+                swapFeeGrowthGlobal1 += growthGlobalDelta;
+            }
+        }
 
         if (zeroForOne) {
             _transfer(token1, amountOut, recipient);
