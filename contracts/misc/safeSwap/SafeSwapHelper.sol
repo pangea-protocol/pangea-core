@@ -45,7 +45,7 @@ contract SafeSwapHelper {
                 : IConcentratedLiquidityPool(pool).token0();
         }
 
-        if (_overInput) {
+        if (overInput) {
             (maximumAmountIn, ) = calculateExactOutput(path, originalTokenIn, amountOut);
         }
     }

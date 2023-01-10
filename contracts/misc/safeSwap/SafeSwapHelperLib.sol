@@ -7,6 +7,7 @@ import {IConcentratedLiquidityPool as CLPool} from "../../interfaces/IConcentrat
 import "../../libraries/DyDxMath.sol";
 import "../../libraries/TickMath.sol";
 import "../../libraries/FullMath.sol";
+import "hardhat/console.sol";
 
 library SafeSwapHelperLib {
     struct SwapCache {
