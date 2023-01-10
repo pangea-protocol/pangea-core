@@ -14,14 +14,14 @@ const deployFunction: DeployFunction = async function ({
 
   const weth = await ethers.getContract<WETH10>("WETH10");
 
-  await deploy("SwapHelper", {
-    from: deployer,
-    args: [weth.address],
-    deterministicDeployment: false,
-    waitConfirmations: await waitConfirmations(),
-    log: true,
-    gasPrice: BigNumber.from("250000000000"),
-  });
+  // await deploy("SwapHelper", {
+  //   from: deployer,
+  //   args: [weth.address],
+  //   deterministicDeployment: false,
+  //   waitConfirmations: await waitConfirmations(),
+  //   log: true,
+  //   gasPrice: BigNumber.from("250000000000"),
+  // });
 
   await deploy("SafeSwapHelper", {
     from: deployer,
