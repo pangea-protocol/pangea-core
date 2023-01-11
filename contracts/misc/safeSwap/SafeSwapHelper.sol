@@ -2,13 +2,15 @@
 
 pragma solidity >=0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../../interfaces/IConcentratedLiquidityPool.sol";
 import "./SafeSwapHelperLib.sol";
 
-contract SafeSwapHelper {
+contract SafeSwapHelper is Initializable {
+
     address public wETH;
 
-    constructor(address _wETH) {
+    function initialize(address _wETH) external initializer {
         wETH = _wETH;
     }
 
@@ -52,6 +54,10 @@ contract SafeSwapHelper {
 
         if (overInput) {
             (maximumAmountIn, ) = calculateExactOutput(path, originalTokenIn, amountOut);
+            if (exactAmountIn <= maximumAmountIn) {
+                // @dev
+                overInput = false;
+            }
         }
     }
 

@@ -10,7 +10,7 @@ const deployFunction: DeployFunction = async function ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) {
   const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { deployer, dev } = await getNamedAccounts();
 
   const weth = await ethers.getContract<WETH10>("WETH10");
 
@@ -25,8 +25,16 @@ const deployFunction: DeployFunction = async function ({
 
   await deploy("SafeSwapHelper", {
     from: deployer,
-    args: [weth.address],
-    deterministicDeployment: false,
+    proxy: {
+      owner: dev,
+      proxyContract: "OpenZeppelinTransparentProxy",
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [weth.address],
+        },
+      },
+    },
     waitConfirmations: await waitConfirmations(),
     log: true,
     gasPrice: BigNumber.from("250000000000"),
