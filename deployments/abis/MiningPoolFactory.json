@@ -11,6 +11,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidPool",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidToken",
     "type": "error"
   },
@@ -127,6 +132,25 @@
       }
     ],
     "name": "UpdateProtocolFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "UpdateRewardToken",
     "type": "event"
   },
   {
@@ -487,6 +511,24 @@
       }
     ],
     "name": "setProtocolFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "pool",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "setRewardToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
