@@ -78,6 +78,9 @@ library SafeSwapHelperLib {
                     }
                     // Based on the price difference calculate the output of th swap: Δy = Δ√P · L.
                     output = DyDxMath.getDy(cache.currentLiquidity, newPrice, cache.currentPrice, false);
+                    if (output == DyDxMath.getDy(cache.currentLiquidity, TickMath.MIN_SQRT_RATIO, cache.currentPrice, false)) {
+                        overInput = true;
+                    }
                     cache.currentPrice = newPrice;
                     cache.input = 0;
                 } else {
@@ -99,6 +102,9 @@ library SafeSwapHelperLib {
                     // Calculate output of swap
                     // - Δx = Δ(1/√P) · L.
                     output = DyDxMath.getDx(cache.currentLiquidity, cache.currentPrice, newPrice, false);
+                    if (output == DyDxMath.getDx(cache.currentLiquidity, cache.currentPrice, TickMath.MAX_SQRT_RATIO - 1, false)) {
+                        overInput = true;
+                    }
                     cache.currentPrice = newPrice;
                     cache.input = 0;
                 } else {
@@ -131,7 +137,9 @@ library SafeSwapHelperLib {
                 }
             }
         }
-        overInput = cache.input > 0;
+        if (cache.input > 0) {
+            overInput = true;
+        }
         price = cache.currentPrice;
     }
 
