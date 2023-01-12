@@ -91,13 +91,6 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     );
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableParameter(
-      token0.address,
-      token1.address,
-      rewardToken.address,
-      BigNumber.from(SWAP_FEE),
-      BigNumber.from(TICK_SPACING)
-    );
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(

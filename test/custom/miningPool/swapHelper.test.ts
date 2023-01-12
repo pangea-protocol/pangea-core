@@ -64,13 +64,6 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     rewardToken = (await Token.deploy("Reward", "R", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableParameter(
-      token0.address,
-      token1.address,
-      rewardToken.address,
-      BigNumber.from(SWAP_FEE),
-      BigNumber.from(TICK_SPACING)
-    );
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
@@ -90,14 +83,6 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
       token0.address.toLowerCase() < wklay.address.toLowerCase()
         ? [token0.address, wklay.address]
         : [wklay.address, token0.address];
-
-    await poolFactory.setAvailableParameter(
-      tokenN0,
-      tokenN1,
-      rewardToken.address,
-      BigNumber.from(SWAP_FEE),
-      BigNumber.from(TICK_SPACING)
-    );
 
     await masterDeployer.deployPool(
       poolFactory.address,
