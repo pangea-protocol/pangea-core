@@ -21,6 +21,7 @@ import "../common/interfaces/IEIP173Proxy.sol";
 import "../common/interfaces/ICustomPool.sol";
 import "../../interfaces/IConcentratedLiquidityPool.sol";
 import "./interfaces/IProtocolFeeSetter.sol";
+import "./interfaces/IMiningPool.sol";
 
 /// @notice Contract for deploying Reward Liquidity Pool
 contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFactory {
@@ -43,6 +44,7 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
     event UpdateProtocolFee(address pool, uint256 protocolFee);
     event UpdateDefaultProtocolFee(uint256 protocolFee);
     event UpdateAvailableFeeAndTickSpacing(uint24 fee, uint24 tickSpacing, bool ok);
+    event UpdateRewardToken(address pool, address token);
 
     error WrongTokenOrder();
     error UnauthorisedDeployer();
@@ -51,6 +53,7 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
     error InvalidConfig();
     error ZeroAddress();
     error InvalidFeeAndTickSpacing();
+    error InvalidPool();
 
     modifier onlyManager() {
         if (manager != _msgSender()) revert UnauthorisedManager();
@@ -153,6 +156,13 @@ contract MiningPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
         availableFeeAndTickSpacing[fee][tickSpacing] = ok;
 
         emit UpdateAvailableFeeAndTickSpacing(fee, tickSpacing, ok);
+    }
+
+    function setRewardToken(address pool, address token) external onlyManager {
+        if (!isPool[pool]) revert InvalidPool();
+        IMiningPool(pool).registerRewardToken(token);
+
+        emit UpdateRewardToken(pool, token);
     }
 
     function setDefaultProtocolFee(uint256 protocolFee) external onlyManager {

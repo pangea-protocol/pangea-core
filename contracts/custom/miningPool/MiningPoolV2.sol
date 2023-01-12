@@ -148,6 +148,9 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
             (address, address, address, uint24, uint24)
         );
 
+        if (_token0 == address(0)) revert ZeroAddress();
+        if (_token0 == _token1) revert InvalidParam();
+
         token0 = _token0;
         token1 = _token1;
         rewardToken = _rewardToken;
