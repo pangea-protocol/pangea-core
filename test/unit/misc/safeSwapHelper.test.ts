@@ -54,7 +54,8 @@ describe("SAFESWAP:HELPER", function () {
     router = pangea.router;
     swapHelper = (await (
       await ethers.getContractFactory("SafeSwapHelper")
-    ).deploy(wklay.address)) as SafeSwapHelper;
+    ).deploy()) as SafeSwapHelper;
+    await swapHelper.initialize(wklay.address);
 
     // ======== TOKENS ==========
     const Token = await ethers.getContractFactory("ERC20Test");

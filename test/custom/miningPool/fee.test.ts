@@ -91,14 +91,18 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     );
 
     // ======== DEPLOY POOL ========
+    await poolFactory.setAvailableFeeAndTickSpacing(
+      SWAP_FEE,
+      TICK_SPACING,
+      true
+    );
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        ["address", "address", "uint24", "uint160", "uint24"],
         [
           token0.address,
           token1.address,
-          rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
           BigNumber.from(TICK_SPACING),
@@ -109,6 +113,7 @@ describe("Reward Liquidity Pool SCENARIO:FEE", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
+    await poolFactory.setRewardToken(poolAddress, rewardToken.address);
     pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
 
     await token0
