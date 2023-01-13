@@ -1,21 +1,21 @@
 import { ethers, network } from "hardhat";
 import {
+  ConcentratedLiquidityPool,
+  ConcentratedLiquidityPoolFactory,
+  ConcentratedLiquidityPoolManager,
+  PoolRouter,
   ERC20Test,
   MasterDeployer,
-  MiningPool,
-  MiningPoolFactory,
-  MiningPoolManager,
-  PoolRouter,
-  SwapHelper,
   WETH10,
+  SafeSwapHelper,
 } from "../../../types";
 import { BigNumber, BigNumberish } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { getDx, getDy, getPriceAtTick, sortTokens } from "../../harness/utils";
 import { expect } from "chai";
-import { MiningPangea } from "./MiningPangea";
+import { Pangea } from "../../harness/pangea";
 
-describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
+describe("SAFESWAP:HELPER", function () {
   const TWO_POW_96 = BigNumber.from(2).pow(96);
   const SWAP_FEE = 2000; // 0.2%
   const TICK_SPACING = 40;
@@ -27,18 +27,17 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
   let liquidityProvider: SignerWithAddress;
   let trader: SignerWithAddress;
 
-  let pangea: MiningPangea;
+  let pangea: Pangea;
   let wklay: WETH10;
   let masterDeployer: MasterDeployer;
-  let poolFactory: MiningPoolFactory;
-  let poolManager: MiningPoolManager;
-  let swapHelper: SwapHelper;
-  let pool: MiningPool;
-  let nativePool: MiningPool;
+  let poolFactory: ConcentratedLiquidityPoolFactory;
+  let poolManager: ConcentratedLiquidityPoolManager;
+  let swapHelper: SafeSwapHelper;
+  let pool: ConcentratedLiquidityPool;
+  let nativePool: ConcentratedLiquidityPool;
   let router: PoolRouter;
   let token0: ERC20Test;
   let token1: ERC20Test;
-  let rewardToken: ERC20Test;
 
   before(async () => {
     _snapshotId = await ethers.provider.send("evm_snapshot", []);
@@ -47,13 +46,16 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     [deployer, liquidityProvider, trader] = await ethers.getSigners();
 
     // ======== CONTRACT ==========
-    pangea = await MiningPangea.Instance.init();
+    pangea = await Pangea.Instance.init();
     wklay = pangea.weth;
     masterDeployer = pangea.masterDeployer;
-    poolFactory = pangea.poolFactory;
-    poolManager = pangea.poolManager;
+    poolFactory = pangea.concentratedPoolFactory;
+    poolManager = pangea.concentratedPoolManager;
     router = pangea.router;
-    swapHelper = pangea.swapHelper;
+    swapHelper = (await (
+      await ethers.getContractFactory("SafeSwapHelper")
+    ).deploy()) as SafeSwapHelper;
+    await swapHelper.initialize(wklay.address);
 
     // ======== TOKENS ==========
     const Token = await ethers.getContractFactory("ERC20Test");
@@ -61,15 +63,12 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     token1 = (await Token.deploy("tokenB", "B", 18)) as ERC20Test;
     [token0, token1] = sortTokens(token0, token1);
 
-    rewardToken = (await Token.deploy("Reward", "R", 18)) as ERC20Test;
-
     // ======== DEPLOY POOL ========
     await poolFactory.setAvailableFeeAndTickSpacing(
       SWAP_FEE,
       TICK_SPACING,
       true
     );
-
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
@@ -88,17 +87,17 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
       token0.address.toLowerCase() < wklay.address.toLowerCase()
         ? [token0.address, wklay.address]
         : [wklay.address, token0.address];
-
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint24", "uint160", "uint24"],
+        ["address", "address", "uint24", "uint160", "uint24", "address"],
         [
           tokenN0,
           tokenN1,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
           BigNumber.from(TICK_SPACING),
+          ethers.constants.AddressZero,
         ]
       )
     );
@@ -106,15 +105,16 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
-    await poolFactory.setRewardToken(poolAddress, rewardToken.address);
-    pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
+    pool = await ethers.getContractAt<ConcentratedLiquidityPool>(
+      "ConcentratedLiquidityPool",
+      poolAddress
+    );
 
     const nativePoolAddress = (
       await poolFactory.getPools(token0.address, wklay.address, 0, 1)
     )[0];
-    await poolFactory.setRewardToken(nativePoolAddress, rewardToken.address);
-    nativePool = await ethers.getContractAt<MiningPool>(
-      "MiningPool",
+    nativePool = await ethers.getContractAt<ConcentratedLiquidityPool>(
+      "ConcentratedLiquidityPool",
       nativePoolAddress
     );
 
@@ -123,13 +123,13 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
       .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token0
       .connect(trader)
-      .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .approve(router.address, ethers.constants.MaxUint256);
     await token1
       .connect(trader)
       .mint(trader.address, ethers.constants.MaxUint256.div(2));
     await token1
       .connect(trader)
-      .approve(router.address, ethers.constants.MaxUint256.div(2));
+      .approve(router.address, ethers.constants.MaxUint256);
 
     snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
@@ -370,21 +370,24 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
         inputAmount
       );
       const outputAmount = exactInputSingle.amountOut;
+      expect(exactInputSingle.overInput).to.be.true;
+
       const exactOutputSingle = await swapHelper.calculateExactOutputSingle(
         pool.address,
         token0.address,
         outputAmount
       );
       const expectedInput = exactOutputSingle.amountIn;
+      expect(exactInputSingle.maximumAmountIn).to.be.eq(expectedInput);
+
       if (!expectedInput.eq(inputAmount)) {
-        const rOutput = (
-          await swapHelper.calculateExactInputSingle(
-            pool.address,
-            token0.address,
-            expectedInput
-          )
-        ).amountOut;
-        expect(outputAmount).to.be.eq(rOutput);
+        const rOutput = await swapHelper.calculateExactInputSingle(
+          pool.address,
+          token0.address,
+          expectedInput
+        );
+        expect(rOutput.overInput).to.be.false;
+        expect(outputAmount).to.be.eq(rOutput.amountOut);
       }
 
       // THEN
@@ -1425,6 +1428,62 @@ describe("Reward Liquidity Pool SCENARIO:with SWAP HELPER", function () {
 
       expect(outputResult).to.be.eq(resultExpectInput);
       expect(inputResult).to.be.eq(resultExpectOutput);
+    });
+
+    it("TEST 1-1) TOKEN1 --> TOKEN0 --> NATIVE", async () => {
+      // GIVEN
+      const inputAmount = ethers.constants.MaxUint256;
+
+      // WHEN
+      const outputResult = await swapHelper.calculateExactInput(
+        [pool.address, nativePool.address],
+        token1.address,
+        inputAmount
+      );
+      expect(outputResult.overInput).to.be.eq(true);
+
+      const inputResult = await swapHelper.calculateExactOutput(
+        [pool.address, nativePool.address],
+        token1.address,
+        outputResult.amountOut
+      );
+      expect(outputResult.maximumAmountIn).to.be.eq(inputResult.amountIn);
+
+      if (!inputResult.amountIn.eq(inputAmount)) {
+        const reOutputResult = await swapHelper.calculateExactInput(
+          [pool.address, nativePool.address],
+          token1.address,
+          inputResult.amountIn
+        );
+
+        expect(reOutputResult.amountOut).to.be.eq(outputResult.amountOut);
+      }
+
+      // THEN
+      const resultExpectInput = await router
+        .connect(trader)
+        .callStatic.exactInput({
+          tokenIn: token1.address,
+          amountIn: inputAmount.div(10),
+          amountOutMinimum: 0,
+          path: [pool.address, nativePool.address],
+          to: trader.address,
+          unwrap: true,
+        });
+
+      const resultExpectOutput = await router
+        .connect(trader)
+        .callStatic.exactOutput({
+          tokenIn: token1.address,
+          amountOut: outputResult.amountOut,
+          amountInMaximum: ethers.constants.MaxUint256,
+          path: [pool.address, nativePool.address],
+          to: trader.address,
+          unwrap: true,
+        });
+
+      expect(outputResult.amountOut).to.be.eq(resultExpectInput);
+      expect(inputResult.amountIn).to.be.eq(resultExpectOutput);
     });
 
     it("TEST 2) NATIVE --> TOKEN0 --> TOKEN1 ", async () => {

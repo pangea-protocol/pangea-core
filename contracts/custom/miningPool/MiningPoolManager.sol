@@ -378,8 +378,7 @@ contract MiningPoolManager is
         address rewardToken = IMiningPool(position.pool).rewardToken();
         if (unwrap && rewardToken == wETH) {
             _transferOutETH(recipient, rewardAmount);
-        } else if (rewardToken == address(0)) {
-        } else {
+        } else if (rewardToken == address(0)) {} else {
             _transferToken(rewardToken, recipient, rewardAmount);
         }
         emit CollectReward(position.pool, recipient, positionId, rewardAmount);

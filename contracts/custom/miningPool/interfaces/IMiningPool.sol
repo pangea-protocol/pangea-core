@@ -8,6 +8,9 @@ import "../../common/interfaces/ICustomPool.sol";
 
 /// @notice Mining Pool interface.
 interface IMiningPool is ICustomPool, IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IConcentratedLiquidityPool {
+
+    function registerRewardToken(address token) external;
+
     /// @notice Look up reward Growth Outside values about a specific tick in the pool
     /// @param tick The tick to look up, the log base 1.0001 of price of the pool
     function rewardGrowthOutsidePerTicks(int24 tick) external view returns (uint256);

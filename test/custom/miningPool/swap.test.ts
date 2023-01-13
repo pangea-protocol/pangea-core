@@ -84,21 +84,19 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     rewardToken = (await Token.deploy("REWARD", "R", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
-    await poolFactory.setAvailableParameter(
-      token0.address,
-      token1.address,
-      rewardToken.address,
-      BigNumber.from(SWAP_FEE),
-      BigNumber.from(TICK_SPACING)
+    await poolFactory.setAvailableFeeAndTickSpacing(
+      SWAP_FEE,
+      TICK_SPACING,
+      true
     );
+
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "address", "uint24", "uint160", "uint24"],
+        ["address", "address", "uint24", "uint160", "uint24"],
         [
           token0.address,
           token1.address,
-          rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
           BigNumber.from(TICK_SPACING),
@@ -110,30 +108,14 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
       token0.address.toLowerCase() < wklay.address.toLowerCase()
         ? [token0.address, wklay.address]
         : [wklay.address, token0.address];
-    await poolFactory.setAvailableParameter(
-      tokenN0,
-      tokenN1,
-      rewardToken.address,
-      BigNumber.from(SWAP_FEE),
-      BigNumber.from(TICK_SPACING)
-    );
 
     await masterDeployer.deployPool(
       poolFactory.address,
       ethers.utils.defaultAbiCoder.encode(
-        [
-          "address",
-          "address",
-          "address",
-          "uint24",
-          "uint160",
-          "uint24",
-          "address",
-        ],
+        ["address", "address", "uint24", "uint160", "uint24", "address"],
         [
           tokenN0,
           tokenN1,
-          rewardToken.address,
           BigNumber.from(SWAP_FEE),
           TWO_POW_96,
           BigNumber.from(TICK_SPACING),
@@ -145,11 +127,13 @@ describe("Reward Liquidity Pool SCENARIO:SWAP", function () {
     const poolAddress = (
       await poolFactory.getPools(token0.address, token1.address, 0, 1)
     )[0];
+    await poolFactory.setRewardToken(poolAddress, rewardToken.address);
     pool = await ethers.getContractAt<MiningPool>("MiningPool", poolAddress);
 
     const nativePoolAddress = (
       await poolFactory.getPools(token0.address, wklay.address, 0, 1)
     )[0];
+    await poolFactory.setRewardToken(nativePoolAddress, rewardToken.address);
     nativePool = await ethers.getContractAt<MiningPool>(
       "MiningPool",
       nativePoolAddress

@@ -75,8 +75,8 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     uint256 internal airdropGrowthGlobal1;
 
     /// @dev airdrop Fee distribution Rate per second at current epoch, multiplied by 2 ^ 128
-    uint256 public airdrop0PerSecond;
-    uint256 public airdrop1PerSecond;
+    uint256 private _airdrop0PerSecond;
+    uint256 private _airdrop1PerSecond;
 
     uint256 public airdropStartTime;
     uint256 public airdropPeriod;
@@ -86,7 +86,7 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
 
     /// @dev reward fee growth counters are multiplied by 2 ^ 128.
     uint256 internal rewardGrowthGlobal_;
-    uint256 public rewardPerSecond;
+    uint256 private _rewardPerSecond;
     /// @dev deprecated fields...
     uint128 public depositedReward;
 
@@ -501,6 +501,20 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         _updateReserves(zeroForOne, uint128(inAmount), amountOut);
         _updateSwapFees(zeroForOne, cache.swapFeeGrowthGlobalA, uint128(cache.protocolFee));
 
+        if (cache.input > 0) {
+            Tick storage lastTick = zeroForOne ? ticks[ticks[TickMath.MIN_TICK].nextTick] : ticks[ticks[TickMath.MAX_TICK].previousTick];
+
+            uint256 growthGlobalDelta = FullMath.mulDiv(cache.input, FixedPoint.Q128, lastTick.liquidity);
+
+            if (zeroForOne) {
+                lastTick.feeGrowthOutside0 += growthGlobalDelta;
+                swapFeeGrowthGlobal0 += growthGlobalDelta;
+            } else {
+                lastTick.feeGrowthOutside1 += growthGlobalDelta;
+                swapFeeGrowthGlobal1 += growthGlobalDelta;
+            }
+        }
+
         if (zeroForOne) {
             _transfer(token1, amountOut, recipient);
         } else {
@@ -679,15 +693,15 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
             if (_lastObservation < _airdropLastTime) {
                 uint256 diff = _airdropLastTime - Math.max(_lastObservation, _airdropStartTime);
 
-                airdrop0 += SafeCast.toUint128(amountInRange(airdrop0PerSecond, diff));
-                airdrop1 += SafeCast.toUint128(amountInRange(airdrop1PerSecond, diff));
-                reward += SafeCast.toUint128(amountInRange(rewardPerSecond, diff));
+                airdrop0 += SafeCast.toUint128(amountInRange(_airdrop0PerSecond, diff));
+                airdrop1 += SafeCast.toUint128(amountInRange(_airdrop1PerSecond, diff));
+                reward += SafeCast.toUint128(amountInRange(_rewardPerSecond, diff));
             }
         }
 
-        airdrop0PerSecond = FullMath.mulDiv(airdrop0, FixedPoint.Q128, period);
-        airdrop1PerSecond = FullMath.mulDiv(airdrop1, FixedPoint.Q128, period);
-        rewardPerSecond = FullMath.mulDiv(reward, FixedPoint.Q128, period);
+        _airdrop0PerSecond = FullMath.mulDiv(airdrop0, FixedPoint.Q128, period);
+        _airdrop1PerSecond = FullMath.mulDiv(airdrop1, FixedPoint.Q128, period);
+        _rewardPerSecond = FullMath.mulDiv(reward, FixedPoint.Q128, period);
         airdropStartTime = startTime;
         airdropPeriod = period;
     }
@@ -720,9 +734,9 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         uint256 duration = airdropDurationAfterLastObservation();
 
         if (duration > 0) {
-            airdropGrowthGlobal0 += FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
-            airdropGrowthGlobal1 += FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
-            rewardGrowthGlobal_ += FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
+            airdropGrowthGlobal0 += FullMath.mulDiv(_airdrop0PerSecond, duration, _liquidity);
+            airdropGrowthGlobal1 += FullMath.mulDiv(_airdrop1PerSecond, duration, _liquidity);
+            rewardGrowthGlobal_ += FullMath.mulDiv(_rewardPerSecond, duration, _liquidity);
         }
 
         unchecked {
@@ -736,15 +750,15 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         if (_liquidity == 0) return (0, 0);
 
         uint256 duration = airdropDurationAfterLastObservation();
-        remain0 = FullMath.mulDiv(airdrop0PerSecond, duration, _liquidity);
-        remain1 = FullMath.mulDiv(airdrop1PerSecond, duration, _liquidity);
+        remain0 = FullMath.mulDiv(_airdrop0PerSecond, duration, _liquidity);
+        remain1 = FullMath.mulDiv(_airdrop1PerSecond, duration, _liquidity);
     }
 
     function rewardGrowthRemain(uint256 _liquidity) private view returns (uint256 rewardRemain) {
         if (_liquidity == 0) return 0;
 
         uint256 duration = airdropDurationAfterLastObservation();
-        rewardRemain = FullMath.mulDiv(rewardPerSecond, duration, _liquidity);
+        rewardRemain = FullMath.mulDiv(_rewardPerSecond, duration, _liquidity);
     }
 
     function _updateReserves(
@@ -1032,17 +1046,33 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     /// @notice The total fee growth of token0 collected per unit of liquidity for the entire life of the pool
     function feeGrowthGlobal0() external view returns (uint256) {
         uint256 growthGlobal = zeroForYield ? yieldGrowthGlobal() : 0;
-        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal0, airdropGrowthGlobal0, airdrop0PerSecond);
+        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal0, airdropGrowthGlobal0, _airdrop0PerSecond);
     }
 
     /// @notice The total fee growth of token1 collected per unit of liquidity for the entire life of the pool
     function feeGrowthGlobal1() external view returns (uint256) {
         uint256 growthGlobal = zeroForYield ? 0 : yieldGrowthGlobal();
-        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal1, airdropGrowthGlobal1, airdrop1PerSecond);
+        return growthGlobal + _feeGrowthGlobal(swapFeeGrowthGlobal1, airdropGrowthGlobal1, _airdrop1PerSecond);
     }
 
     function rewardGrowthGlobal() external view returns (uint256) {
-        return _feeGrowthGlobal(0, rewardGrowthGlobal_, rewardPerSecond);
+        return _feeGrowthGlobal(0, rewardGrowthGlobal_, _rewardPerSecond);
+    }
+
+    function airdrop0PerSecond() external view returns (uint256) {
+        return onAirdrop() ? _airdrop0PerSecond : 0;
+    }
+
+    function airdrop1PerSecond() external view returns (uint256) {
+        return onAirdrop() ? _airdrop1PerSecond : 0;
+    }
+
+    function rewardPerSecond() external view returns (uint256) {
+        return onAirdrop() ? _rewardPerSecond : 0;
+    }
+
+    function onAirdrop() internal view returns (bool) {
+        return block.timestamp <= airdropStartTime + airdropPeriod;
     }
 
     function yieldGrowthGlobal() public view returns (uint256) {
@@ -1174,13 +1204,17 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
     function _updateShareAndYBalance(bool _zeroForYield) internal {
         if (_zeroForYield) {
             address token = token0;
-            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
-            reserve0 = uint128(IYieldToken(token).balanceOf(address(this)));
+            shareReserve = uint128(_share(token));
+            reserve0 = uint128(_balance(token));
         } else {
             address token = token1;
-            shareReserve = uint128(IYieldToken(token).sharesOf(address(this)));
-            reserve1 = uint128(IYieldToken(token).balanceOf(address(this)));
+            shareReserve = uint128(_share(token));
+            reserve1 = uint128(_balance(token));
         }
+    }
+
+    function _share(address token) internal view returns (uint256) {
+        return IYieldToken(token).sharesOf(address(this));
     }
 
     function _getYieldBalance(bool _zeroForYield) internal view returns (uint128) {
