@@ -240,10 +240,8 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
             totalTicks += numOfInserted;
         }
 
-        unchecked {
-            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
-        }
+        _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
 
         (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
             priceLower,
@@ -289,9 +287,7 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
 
         _updateObservationRecord();
 
-        unchecked {
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
-        }
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
 
         (token0Amount, token1Amount) = DyDxMath.getAmountsForLiquidity(
             uint256(priceLower),

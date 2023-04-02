@@ -25,26 +25,23 @@ library Ticks {
 
         if (zeroForOne) {
             // Moving backwards through the linked list.
-            // Liquidity cannot overflow due to the MAX_TICK_LIQUIDITY requirement.
-            unchecked {
-                if ((nextTickToCross / int24(tickSpacing)) % 2 == 0) {
-                    currentLiquidity -= ticks[nextTickToCross].liquidity;
-                } else {
-                    currentLiquidity += ticks[nextTickToCross].liquidity;
-                }
+            if ((nextTickToCross / int24(tickSpacing)) % 2 == 0) {
+                currentLiquidity -= ticks[nextTickToCross].liquidity;
+            } else {
+                currentLiquidity += ticks[nextTickToCross].liquidity;
             }
+
             ticks[nextTickToCross].feeGrowthOutside0 = feeGrowthGlobalB - ticks[nextTickToCross].feeGrowthOutside0;
             ticks[nextTickToCross].feeGrowthOutside1 = feeGrowthGlobalA - ticks[nextTickToCross].feeGrowthOutside1;
             nextTickToCross = ticks[nextTickToCross].previousTick;
         } else {
             // Moving forwards through the linked list.
-            unchecked {
-                if ((nextTickToCross / int24(tickSpacing)) % 2 == 0) {
-                    currentLiquidity += ticks[nextTickToCross].liquidity;
-                } else {
-                    currentLiquidity -= ticks[nextTickToCross].liquidity;
-                }
+            if ((nextTickToCross / int24(tickSpacing)) % 2 == 0) {
+                currentLiquidity += ticks[nextTickToCross].liquidity;
+            } else {
+                currentLiquidity -= ticks[nextTickToCross].liquidity;
             }
+
             ticks[nextTickToCross].feeGrowthOutside1 = feeGrowthGlobalB - ticks[nextTickToCross].feeGrowthOutside1;
             ticks[nextTickToCross].feeGrowthOutside0 = feeGrowthGlobalA - ticks[nextTickToCross].feeGrowthOutside0;
             nextTickToCross = ticks[nextTickToCross].nextTick;
@@ -170,9 +167,7 @@ library Ticks {
             delete ticks[lower];
             numOfRemoved += 1;
         } else {
-            unchecked {
-                current.liquidity -= amount;
-            }
+            current.liquidity -= amount;
         }
 
         current = ticks[upper];
@@ -190,9 +185,7 @@ library Ticks {
             delete ticks[upper];
             numOfRemoved += 1;
         } else {
-            unchecked {
-                current.liquidity -= amount;
-            }
+            current.liquidity -= amount;
         }
 
         return (nearestTick, numOfRemoved);

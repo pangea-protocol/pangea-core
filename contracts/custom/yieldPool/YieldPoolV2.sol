@@ -294,10 +294,7 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         uint160 currentPrice = price;
 
         _updateObservationRecord();
-
-        unchecked {
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
-        }
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
 
         (token0Amount, token1Amount) = DyDxMath.getAmountsForLiquidity(
             uint256(priceLower),
