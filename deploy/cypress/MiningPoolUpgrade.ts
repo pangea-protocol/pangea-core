@@ -11,10 +11,6 @@ const deployFunction: DeployFunction = async function ({
 }: HardhatRuntimeEnvironment) {
   const { deploy } = deployments;
   const deployer = await ethers.getNamedSigner("deployer");
-  // console.log("START!!!!");
-  // if (true) {
-  //   return;
-  // }
 
   const { address: RewardTicks } = await deploy("RewardTicks", {
     from: deployer.address,
@@ -41,9 +37,9 @@ const deployFunction: DeployFunction = async function ({
   )) as MiningPoolFactory;
 
   // [2] set Pool Implementation
-  // await doTransaction(
-  //   miningPoolFactory.setPoolImplementation(poolImplementation)
-  // );
+  await doTransaction(
+    miningPoolFactory.setPoolImplementation(poolImplementation)
+  );
 
   // // [3] upgrade previous pools
   const pools = [
