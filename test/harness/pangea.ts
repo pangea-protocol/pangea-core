@@ -17,6 +17,7 @@ import {
   SwapHelper,
   AirdropDistributor,
   PoolDashboard,
+  DyDxMathMock,
 } from "../../types";
 import { getBigNumber, getFactories, sortTokens } from "./helpers";
 
@@ -41,6 +42,7 @@ export class Pangea {
   public concentratedPoolHelper!: ConcentratedLiquidityPoolHelper;
   public concentratedPools!: ConcentratedLiquidityPool[];
   public tickMath!: TickMathMock;
+  public dyDxMath!: DyDxMathMock;
   public swapHelper!: SwapHelper;
   public airdropDistributor!: AirdropDistributor;
 
@@ -62,6 +64,7 @@ export class Pangea {
       TickMath,
       TickIndex,
       TickLibrary,
+      DyDxMathMock,
       SwapHelper,
     ] = await Promise.all(
       getFactories([
@@ -75,6 +78,7 @@ export class Pangea {
         "TickMathMock",
         "TickIndex",
         "Ticks",
+        "DyDxMathMock",
         "SwapHelper",
       ])
     );
@@ -120,7 +124,8 @@ export class Pangea {
       ConcentratedPoolManager,
       ConcentratedPoolFactory,
       ConcentratedPoolHelper,
-      TickMath
+      TickMath,
+      DyDxMathMock
     );
     await this.addFactoriesToWhitelist();
     await this.deployConcentratedCore(ConcentratedLiquidityPool);
@@ -275,7 +280,8 @@ export class Pangea {
     ConcentratedPoolManager: ContractFactory,
     ConcentratedPoolFactory: ContractFactory,
     ConcentratedPoolHelper: ContractFactory,
-    TickMath: ContractFactory
+    TickMath: ContractFactory,
+    DyDxMathMock: ContractFactory
   ) {
     this.concentratedPoolManager =
       (await ConcentratedPoolManager.deploy()) as ConcentratedLiquidityPoolManager;
@@ -296,6 +302,7 @@ export class Pangea {
     this.concentratedPoolHelper =
       (await ConcentratedPoolHelper.deploy()) as ConcentratedLiquidityPoolHelper;
     this.tickMath = (await TickMath.deploy()) as TickMathMock;
+    this.dyDxMath = (await DyDxMathMock.deploy()) as DyDxMathMock;
   }
 
   private async addFactoriesToWhitelist() {
