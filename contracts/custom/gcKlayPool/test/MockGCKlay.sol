@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import './SharesMath.sol';
 import '../../../libraries/FullMath.sol';
+import "./MockStaking.sol";
 
 /**
  * @title MockGCKlay
@@ -33,7 +34,7 @@ contract MockGCKlay is ERC20 {
     uint256 private _totalShares;
 
     // for mocking
-    address public cnStaking = address(2);
+    MockStaking public cnStaking = new MockStaking();
 
     receive() external payable {}
 
@@ -267,6 +268,13 @@ contract MockGCKlay is ERC20 {
         _sweepAndStake(_msgSender(), msg.value);
     }
 
+    function unstake(uint256 amount) public {
+        if (amount < 1) return;
+        _sweepAndStake(address(0), 0);
+        _burnAmount(msg.sender, amount);
+        cnStaking.unstake(msg.sender, amount);
+    }
+
     /**
      * @notice Stakes native tokens to the {cnStaking} and increases {recipient}'s shares accordingly.
    *
@@ -305,6 +313,6 @@ contract MockGCKlay is ERC20 {
 
     function _stake(uint256 amount) internal virtual {
         // slither-disable-next-line arbitrary-send-eth
-        cnStaking.call{value:amount}('');
+        cnStaking.stake{value:amount}();
     }
 }

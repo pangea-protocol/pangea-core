@@ -61,6 +61,8 @@ describe("GCKlayPool TEST", function () {
     KLY = (await Token.deploy("KLY", "KLY", 18)) as ERC20Test;
 
     // ======== DEPLOY POOL ========
+    await poolFactory.setAvailableFeeAndTickSpacing(0, 20, true);
+
     const [tokenN0Address, tokenN1Address] =
       KLAY.address.toLowerCase() < mockGCKlay.address.toLowerCase()
         ? [KLAY.address, mockGCKlay.address]
@@ -79,12 +81,15 @@ describe("GCKlayPool TEST", function () {
         ]
       )
     );
+
     await masterDeployer.setAirdropDistributor(airdrop.address);
 
     const poolAddress = (
       await poolFactory.getPools(KLAY.address, mockGCKlay.address, 0, 1)
     )[0];
     pool = await ethers.getContractAt<GCKlayPool>("GCKlayPool", poolAddress);
+
+    await poolFactory.setRewardToken(pool.address, KLY.address);
 
     await KLY.mint(airdrop.address, ethers.constants.MaxUint256.div(10));
     await KLY.connect(airdrop).approve(
@@ -114,20 +119,14 @@ describe("GCKlayPool TEST", function () {
     await KLAY.burnAll(liquidityProvider.address);
     await mockGCKlay
       .connect(liquidityProvider)
-      .transfer(
-        deployer.address,
-        await mockGCKlay.balanceOf(liquidityProvider.address)
-      );
+      .unstake(await mockGCKlay.balanceOf(liquidityProvider.address));
   }
 
   async function clearBalance() {
     await KLAY.burnAll(liquidityProvider.address);
     await mockGCKlay
       .connect(liquidityProvider)
-      .transfer(
-        deployer.address,
-        await mockGCKlay.balanceOf(liquidityProvider.address)
-      );
+      .unstake(await mockGCKlay.balanceOf(liquidityProvider.address));
   }
 
   async function depositReward(value: BigNumberish) {
@@ -582,7 +581,7 @@ describe("GCKlayPool TEST", function () {
    * > 유동성을 공급한 포지션이 존재하였을 때, 납입한 유동성과 예치한 시간에 비례하여 stKLAY가 올바르게 분배되는가?
    *
    */
-  describe("# stKLAY 분배 시나리오 테스트", async () => {
+  describe.only("# stKLAY 분배 시나리오 테스트", async () => {
     /*
      *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
      * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
@@ -622,6 +621,8 @@ describe("GCKlayPool TEST", function () {
           DUST_VALUE_LIMIT
         );
       } else {
+        console.log(`${lp1Reward.token0amount} ${lp1Reward.token1amount}`);
+        console.log(`${lp2Reward.token0amount} ${lp2Reward.token1amount}`);
         expect(lp1Reward.token0amount).to.be.closeTo(
           allocatedReward,
           DUST_VALUE_LIMIT

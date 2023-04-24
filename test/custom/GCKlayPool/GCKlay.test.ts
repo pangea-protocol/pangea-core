@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { expect } from "chai";
 import { BigNumberish } from "ethers";
 
-describe.only("GCKlay Token TEST", function () {
+describe("GCKlay Token TEST", function () {
   let _snapshotId: string;
   let snapshotId: string;
 
@@ -44,7 +44,7 @@ describe.only("GCKlay Token TEST", function () {
   }
 
   describe("Transfer Test (Simple Case)", async () => {
-    it.only("case 1) ", async () => {
+    it("case 1) ", async () => {
       /**
        * 상황
        * [1] user1가 10 KLAY만큼 스테이킹
@@ -61,7 +61,7 @@ describe.only("GCKlay Token TEST", function () {
       await mockGCKlay
         .connect(user2)
         .stake({ value: ethers.utils.parseEther("10") });
-      await depositReward(ethers.utils.parseEther("1.1"));
+      await depositReward(ethers.utils.parseEther("1.2"));
 
       const transferAmount = ethers.utils.parseEther("1");
 

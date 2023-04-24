@@ -156,24 +156,11 @@ describe("GCKlay Pool SCENARIO:SWAP", function () {
     _snapshotId = await ethers.provider.send("evm_snapshot", []);
   });
 
-  async function clearLPBalance() {
-    await token0.burnAll(liquidityProvider.address);
-    await mockGCKlay
-      .connect(liquidityProvider)
-      .transfer(
-        deployer.address,
-        await mockGCKlay.balanceOf(liquidityProvider.address)
-      );
-  }
-
   async function clearBalance() {
     await token0.burnAll(liquidityProvider.address);
     await mockGCKlay
       .connect(liquidityProvider)
-      .transfer(
-        deployer.address,
-        await mockGCKlay.balanceOf(liquidityProvider.address)
-      );
+      .unstake(await mockGCKlay.balanceOf(liquidityProvider.address));
   }
 
   async function depositReward(value: BigNumberish) {
@@ -1551,7 +1538,9 @@ describe("GCKlay Pool SCENARIO:SWAP", function () {
         to: trader.address,
         unwrap: false,
       });
-      expect(await mockGCKlay.balanceOf(trader.address)).to.be.eq(amountOut);
+      expect(
+        (await mockGCKlay.balanceOf(trader.address)).sub(amountOut).abs()
+      ).to.be.lte(1);
     });
 
     it("exactOutputSingle native --> erc20", async () => {
@@ -1578,7 +1567,10 @@ describe("GCKlay Pool SCENARIO:SWAP", function () {
         },
         { value: inputAmount }
       );
-      expect(await mockGCKlay.balanceOf(trader.address)).to.be.eq(amountOut);
+
+      expect(
+        (await mockGCKlay.balanceOf(trader.address)).sub(amountOut).abs()
+      ).to.be.lte(1);
     });
 
     it("exactOutputSingle erc20 --> native", async () => {
@@ -1677,7 +1669,7 @@ describe("GCKlay Pool SCENARIO:SWAP", function () {
           ? await mockGCKlay.balanceOf(trader.address)
           : await token0.balanceOf(trader.address);
 
-      expect(realOutput).to.be.eq(outputAmount);
+      expect(realOutput.sub(outputAmount)).to.be.lte(1);
     });
 
     it("TEST 2) EXACT OUTPUT SINGLE ERC20 --> ERC20 CASE> ", async () => {

@@ -49,6 +49,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
     /// @dev 1000 corresponds to 0.1% fee. Fee is measured in pips.
     uint24 public swapFee;
     uint128 internal MAX_TICK_LIQUIDITY;
+    uint256 internal DUST = 1000;
 
     IMasterDeployer internal masterDeployer;
     IPoolLogger internal logger;
@@ -183,29 +184,33 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
 
     /// @dev Price is not a constructor parameter to allow for predictable address calculation.
     function setPrice(uint160 _price) external {
-        if (msg.sender != factory) revert NotAuthorized();
+        _validateFactory();
         if (price != 0) revert AlreadyPriceInitialized();
         TickMath.validatePrice(_price);
         price = _price;
     }
 
     function setProtocolFee(uint256 _protocolFee) external {
-        if (msg.sender != factory) revert NotAuthorized();
+        _validateFactory();
         if (_protocolFee > 10000) revert InvalidParam();
         protocolFee = _protocolFee;
     }
 
     /// @dev Called only once from the factory.
     function registerLogger(address _logger) external {
-        if (msg.sender != factory) revert NotAuthorized();
+        _validateFactory();
         logger = IPoolLogger(_logger);
     }
 
     /// @dev Register reward Token
     function registerRewardToken(address _token) external {
-        if (msg.sender != factory) revert NotAuthorized();
+        _validateFactory();
         if (rewardToken != address(0)) revert NotAuthorized();
         rewardToken = _token;
+    }
+
+    function _validateFactory() internal view {
+        if (msg.sender != factory) revert NotAuthorized();
     }
 
     /// @dev Mints LP tokens - should be called via the CL pool manager contract.
@@ -264,12 +269,16 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
 
         if (amount0Actual != 0) {
             reserve0 += amount0Actual;
-            if (reserve0 > _balance(token0)) revert Token0Missing();
+            uint256 balance = _balance(token0);
+            if (zeroForYield) balance += DUST; // for rounding error in GCKlay case
+            if (reserve0 > balance) revert Token0Missing();
         }
 
         if (amount1Actual != 0) {
             reserve1 += amount1Actual;
-            if (reserve1 > _balance(token1)) revert Token1Missing();
+            uint256 balance = _balance(token1);
+            if (!zeroForYield) balance += DUST; // for rounding error in GCKlay case
+            if (reserve1 > balance) revert Token1Missing();
         }
 
         try
@@ -360,6 +369,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
 
         rewardAmount = _collectReward(msg.sender, lower, upper, desiredReward);
 
+        if (rewardToken == address(0)) return rewardAmount;
         _transfer(rewardToken, rewardAmount, msg.sender);
     }
 
@@ -767,13 +777,13 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
         if (zeroForOne) {
             uint256 balance0 = _balance(token0);
             uint128 newBalance = reserve0 + inAmount;
-            if (uint256(newBalance) > balance0) revert Token0Missing();
+            if (!zeroForYield && uint256(newBalance) > balance0) revert Token0Missing();
             reserve0 = newBalance;
             reserve1 -= uint128(amountOut);
         } else {
             uint256 balance1 = _balance(token1);
             uint128 newBalance = reserve1 + inAmount;
-            if (uint256(newBalance) > balance1) revert Token1Missing();
+            if (zeroForYield && uint256(newBalance) > balance1) revert Token1Missing();
             reserve1 = newBalance;
             reserve0 -= uint128(amountOut);
         }

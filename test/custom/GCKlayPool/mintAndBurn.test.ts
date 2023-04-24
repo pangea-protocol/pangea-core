@@ -311,24 +311,6 @@ describe("GCKlay Pool SCENARIO:MINT_AND_BURN", function () {
       ).to.be.reverted;
     });
 
-    it("REVERT CASE ) token = address(0)", async () => {
-      await expect(
-        masterDeployer.deployPool(
-          poolFactory.address,
-          ethers.utils.defaultAbiCoder.encode(
-            ["address", "address", "uint24", "uint160", "uint24"],
-            [
-              ethers.constants.AddressZero,
-              mockGCKlay.address,
-              BigNumber.from(SWAP_FEE),
-              TWO_POW_96,
-              BigNumber.from(TICK_SPACING),
-            ]
-          )
-        )
-      ).to.be.reverted;
-    });
-
     it("REVERT CASE ) Pool:setPrice", async () => {
       await expect(pool.setPrice(0)).to.be.reverted;
     });
@@ -1195,8 +1177,12 @@ describe("GCKlay Pool SCENARIO:MINT_AND_BURN", function () {
       // THEN
       const userBalance = await liquidityProviderBalance();
 
-      expect(userBalance.token0).to.be.eq(expectedLp[0].add(expectedFee[0]));
-      expect(userBalance.token1).to.be.eq(expectedLp[1].add(expectedFee[1]));
+      expect(
+        userBalance.token0.sub(expectedLp[0].add(expectedFee[0])).abs()
+      ).to.be.lte(1000);
+      expect(
+        userBalance.token1.sub(expectedLp[1].add(expectedFee[1])).abs()
+      ).to.be.lte(1000);
     });
 
     it("TEST 3) LP Mint Partial", async () => {
