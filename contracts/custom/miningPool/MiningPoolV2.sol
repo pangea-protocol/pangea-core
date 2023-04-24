@@ -240,10 +240,8 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
             totalTicks += numOfInserted;
         }
 
-        unchecked {
-            _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
-        }
+        _updatePosition(msg.sender, mintParams.lower, mintParams.upper, int128(uint128(liquidityMinted)));
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity += uint128(liquidityMinted);
 
         (uint128 amount0Actual, uint128 amount1Actual) = DyDxMath.getAmountsForLiquidity(
             priceLower,
@@ -289,9 +287,7 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
 
         _updateObservationRecord();
 
-        unchecked {
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
-        }
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
 
         (token0Amount, token1Amount) = DyDxMath.getAmountsForLiquidity(
             uint256(priceLower),
@@ -429,7 +425,7 @@ contract MiningPoolV2 is IMiningPoolStruct, IConcentratedLiquidityPoolStruct, IP
                 // Maximum swap amount within the current tick range: Δy = Δ√P · L.
                 uint256 maxDy = DyDxMath.getDy(cache.currentLiquidity, cache.currentPrice, nextTickPrice, false);
 
-                if (cache.input <= maxDy) {
+                if (cache.input < maxDy) {
                     // We can swap within the current range.
                     // Calculate new price after swap: ΔP = Δy/L.
                     uint256 newPrice = cache.currentPrice + FullMath.mulDiv(cache.input, FixedPoint.Q96, cache.currentLiquidity);

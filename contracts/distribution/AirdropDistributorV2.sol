@@ -164,7 +164,8 @@ contract AirdropDistributorV2 is IAirdropDistributorV2, OwnableUpgradeable {
     }
 
     function validateToDeposit(address pool, address token) internal {
-        if (!masterDeployer.pools(pool)) revert NotExists();
+        if (!(masterDeployer.pools(pool) && masterDeployer.whitelistedFactories(IConcentratedLiquidityPool(pool).factory())))
+            revert NotExists();
         address[] memory tokens = airdropTokens(pool);
 
         for (uint256 i = 0; i < tokens.length; i++) {

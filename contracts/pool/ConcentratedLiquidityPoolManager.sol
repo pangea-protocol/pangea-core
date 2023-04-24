@@ -79,7 +79,8 @@ contract ConcentratedLiquidityPoolManager is
     }
 
     modifier validPool(address pool) {
-        if (!masterDeployer.pools(pool)) revert InvalidPool();
+        if (!(masterDeployer.pools(pool) && masterDeployer.whitelistedFactories(IConcentratedLiquidityPool(pool).factory())))
+            revert InvalidPool();
         _;
     }
 

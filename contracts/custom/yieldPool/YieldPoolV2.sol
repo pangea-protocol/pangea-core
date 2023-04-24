@@ -294,10 +294,7 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
         uint160 currentPrice = price;
 
         _updateObservationRecord();
-
-        unchecked {
-            if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
-        }
+        if (priceLower <= currentPrice && currentPrice < priceUpper) liquidity -= amount;
 
         (token0Amount, token1Amount) = DyDxMath.getAmountsForLiquidity(
             uint256(priceLower),
@@ -432,7 +429,7 @@ contract YieldPoolV2 is IYieldPoolStruct, IConcentratedLiquidityPoolStruct, IPoo
                 // Maximum swap amount within the current tick range: Δy = Δ√P · L.
                 uint256 maxDy = DyDxMath.getDy(cache.currentLiquidity, cache.currentPrice, nextTickPrice, false);
 
-                if (cache.input <= maxDy) {
+                if (cache.input < maxDy) {
                     // We can swap within the current range.
                     // Calculate new price after swap: ΔP = Δy/L.
                     uint256 newPrice = cache.currentPrice + FullMath.mulDiv(cache.input, FixedPoint.Q96, cache.currentLiquidity);
