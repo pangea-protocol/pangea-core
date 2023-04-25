@@ -94,6 +94,7 @@ contract GCKlayPoolFactory is OwnableUpgradeable, IConcentratedLiquidityPoolFact
         );
 
         if (tokenA > tokenB) revert WrongTokenOrder();
+        if (tokenA != gcklay && tokenB != gcklay) revert InvalidToken();
         if (!availableFeeAndTickSpacing[swapFee][tickSpacing]) revert InvalidFeeAndTickSpacing();
         address[] memory _pools = pools[tokenA][tokenB];
 
