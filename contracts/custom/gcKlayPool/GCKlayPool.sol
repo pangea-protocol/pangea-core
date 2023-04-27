@@ -49,7 +49,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
     /// @dev 1000 corresponds to 0.1% fee. Fee is measured in pips.
     uint24 public swapFee;
     uint128 internal MAX_TICK_LIQUIDITY;
-    uint256 internal DUST = 1000;
+    uint256 internal DUST = 100;
 
     IMasterDeployer internal masterDeployer;
     IPoolLogger internal logger;
@@ -630,7 +630,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
         uint256[] memory amounts = new uint256[](2);
 
         if (token0ProtocolFee > 0) {
-            amount0 = token0ProtocolFee;
+            amount0 = uint128(Math.min(uint256(token0ProtocolFee), _balance(token0)));
             token0ProtocolFee = 0;
             reserve0 -= amount0;
 
@@ -640,7 +640,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
         }
 
         if (token1ProtocolFee > 0) {
-            amount1 = token1ProtocolFee;
+            amount1 = uint128(Math.min(uint256(token1ProtocolFee), _balance(token1)));
             token1ProtocolFee = 0;
             reserve1 -= amount1;
 
