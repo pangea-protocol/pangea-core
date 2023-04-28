@@ -10,15 +10,17 @@ import "hardhat-interface-generator";
 import "hardhat-abi-exporter";
 import "hardhat-spdx-license-identifier";
 import "hardhat-tracer";
-import '@primitivefi/hardhat-dodoc';
+import "@primitivefi/hardhat-dodoc";
 import "solidity-coverage";
 import "./tasks";
 
-import {HardhatUserConfig} from "hardhat/config";
-import {removeConsoleLog} from "hardhat-preprocessor";
+import { HardhatUserConfig } from "hardhat/config";
+import { removeConsoleLog } from "hardhat-preprocessor";
 
 const accounts = {
-  mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+  mnemonic:
+    process.env.MNEMONIC ||
+    "test test test test test test test test test test test junk",
 };
 
 const config: HardhatUserConfig = {
@@ -33,7 +35,7 @@ const config: HardhatUserConfig = {
       live: false,
       chainId: 31337,
       saveDeployments: true,
-      tags: ["local"]
+      tags: ["local"],
     },
     hardhat: {
       allowUnlimitedContractSize: true,
@@ -44,37 +46,37 @@ const config: HardhatUserConfig = {
       gasPrice: 250000000000,
       accounts: {
         // 1,000,000,000
-        accountsBalance: "1000000000000000000000000000000000000000"
+        accountsBalance: "1000000000000000000000000000000000000000",
       },
       // Solidity-coverage overrides gasPrice to 1 which is not compatible with EIP1559
       hardfork: process.env.CODE_COVERAGE ? "berlin" : "london",
     },
     baobab: {
       chainId: 1001,
-      url: 'https://baobab.ken.stick.us/',
+      url: "https://baobab.ken.stick.us/",
       accounts,
-      gasPrice: 250000000000
+      gasPrice: 250000000000,
     },
     cypress: {
       chainId: 8217,
-      url: 'https://internal.ken.stick.us',
+      url: "https://internal.ken.stick.us",
       accounts,
-      gasPrice: 250000000000
+      gasPrice: 250000000000,
     },
   },
   // to build a test environment, not for live deployment
   namedAccounts: {
     deployer: {
       default: 0,
-      cypress: "0x2A2F23ff33671361010D357529BDF0adca9416Fc"
+      cypress: "0x2A2F23ff33671361010D357529BDF0adca9416Fc",
     },
     dev: {
       default: 1,
-      cypress: "0x9906594cF4CC26b62fEf0eA53CE159F4d2Ad9a32"
+      cypress: "0x9906594cF4CC26b62fEf0eA53CE159F4d2Ad9a32",
     },
     protocolFeeTo: {
       default: 2,
-      cypress: "0x88219f20e9B4FDa1088f27E71518A0b626cFf21B"
+      cypress: "0x88219f20e9B4FDa1088f27E71518A0b626cFf21B",
     },
     user100: {
       default: 3,
@@ -99,7 +101,7 @@ const config: HardhatUserConfig = {
     },
     user107: {
       default: 10,
-    }
+    },
   },
   paths: {
     artifacts: "artifacts",
@@ -111,7 +113,10 @@ const config: HardhatUserConfig = {
     tests: "test",
   },
   preprocess: {
-    eachLine: removeConsoleLog((bre) => bre.network.name !== "hardhat" && bre.network.name !== "localhost"),
+    eachLine: removeConsoleLog(
+      (bre) =>
+        bre.network.name !== "hardhat" && bre.network.name !== "localhost"
+    ),
   },
   solidity: {
     compilers: [
@@ -132,14 +137,14 @@ const config: HardhatUserConfig = {
             runs: 99999,
           },
         },
-      }
+      },
     ],
     settings: {
       outputSelection: {
         "*": {
-          "*": ["storageLayout"]
-        }
-      }
+          "*": ["storageLayout"],
+        },
+      },
     },
     overrides: {
       "contracts/misc/proxy.sol": {
@@ -149,7 +154,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 99999,
           },
-        }
+        },
       },
       "contracts/pool/PoolFactoryLib.sol": {
         version: "0.8.9",
@@ -158,7 +163,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 5000,
           },
-        }
+        },
       },
       "contracts/pool/ConcentratedLiquidityPool.sol": {
         version: "0.8.9",
@@ -167,7 +172,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 2000,
           },
-        }
+        },
       },
       "contracts/pool/ConcentratedLiquidityPoolManager.sol": {
         version: "0.8.9",
@@ -176,7 +181,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 2000,
           },
-        }
+        },
       },
       "contracts/custom/miningPool/MiningPool.sol": {
         version: "0.8.9",
@@ -185,7 +190,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 2000,
           },
-        }
+        },
       },
       "contracts/custom/miningPool/MiningPoolV2.sol": {
         version: "0.8.9",
@@ -194,7 +199,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 2000,
           },
-        }
+        },
       },
       "contracts/custom/miningPool/MiningPoolManager.sol": {
         version: "0.8.9",
@@ -203,7 +208,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1500,
           },
-        }
+        },
       },
       "contracts/custom/miningPool/test/MockMiningPool.sol": {
         version: "0.8.9",
@@ -212,7 +217,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1000,
           },
-        }
+        },
       },
       "contracts/custom/yieldPool/YieldPool.sol": {
         version: "0.8.9",
@@ -221,7 +226,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 500,
           },
-        }
+        },
       },
       "contracts/custom/yieldPool/YieldPoolV2.sol": {
         version: "0.8.9",
@@ -231,8 +236,17 @@ const config: HardhatUserConfig = {
             runs: 100,
           },
         },
-      }
-    }
+      },
+      "contracts/custom/gcKlayPool/GCKlayPool.sol": {
+        version: "0.8.9",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+    },
   },
   dodoc: {
     runOnCompile: false,
@@ -245,13 +259,13 @@ const config: HardhatUserConfig = {
     timeout: 300000,
   },
   abiExporter: {
-    path: 'deployments/abis',
+    path: "deployments/abis",
     runOnCompile: true,
     clear: true,
     flat: true,
     spacing: 2,
     pretty: false,
-  }
+  },
 };
 
 // You need to export an object to set up your config

@@ -30,4 +30,6 @@ interface IMasterDeployer {
 
     /// @notice Return the address of Factory deployed pool
     function getFactoryAddress(address pool) external view returns (address factory);
+
+    function whitelistedFactories(address factory) external view returns (bool);
 }
