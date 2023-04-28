@@ -36,7 +36,6 @@ import "../../libraries/Ticks.sol";
 import "../common/libraries/RewardTicks.sol";
 import "./interfaces/IGCKlay.sol";
 import "./interfaces/IGCKlayPool.sol";
-import "hardhat/console.sol";
 
 /// @notice Custom Pool : Yield pool, it's for liquidity mining using reward token
 contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFactoryCallee, LPRewardCallee, Initializable {
@@ -49,7 +48,7 @@ contract GCKlayPool is IGCKlayPool, IConcentratedLiquidityPoolStruct, IPoolFacto
     /// @dev 1000 corresponds to 0.1% fee. Fee is measured in pips.
     uint24 public swapFee;
     uint128 internal MAX_TICK_LIQUIDITY;
-    uint256 internal DUST = 100;
+    uint256 internal constant DUST = 100;
 
     IMasterDeployer internal masterDeployer;
     IPoolLogger internal logger;

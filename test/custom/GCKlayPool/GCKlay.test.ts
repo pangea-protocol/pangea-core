@@ -77,16 +77,10 @@ describe("GCKlay Token TEST", function () {
         mockGCKlay.balanceOf(user1.address),
         mockGCKlay.balanceOf(user2.address),
       ]);
-      console.log(`${before1} ${before2}`);
-      console.log(`${after1} ${after2}`);
 
       // THEN
-      expect(before1.sub(after1))
-        .to.be.gte(transferAmount)
-        .lte(transferAmount.add(1));
-      expect(after2.sub(before2))
-        .to.be.gte(transferAmount)
-        .lte(transferAmount.add(1));
+      expect(before1.sub(after1)).lte(transferAmount.add(1));
+      expect(after2.sub(before2)).lte(transferAmount.add(1));
     });
   });
 

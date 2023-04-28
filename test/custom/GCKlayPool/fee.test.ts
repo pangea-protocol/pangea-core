@@ -1213,7 +1213,7 @@ describe("GCKlay Pool SCENARIO:FEE", function () {
       await mockGCKlay
         .connect(liquidityProvider)
         .stake({ value: ethers.utils.parseEther("100") });
-      const givenTotalStaking = ethers.utils.parseEther("2");
+      const givenTotalStaking = ethers.utils.parseEther("1");
       await depositReward(givenTotalStaking);
 
       const beforeYTokenEarned = (await poolManager.positionFees(lp.positionId))

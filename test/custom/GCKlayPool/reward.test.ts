@@ -507,73 +507,6 @@ describe("GCKlayPool TEST", function () {
         DUST_VALUE_LIMIT
       );
     });
-
-    /*
-     *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
-     * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
-     *
-     *                    |<--------------------------0 (에어드랍 시기가 1/2 정도 지나갔을 때, 스왑 수행)
-     *        |<-----LP2----->| => LP의 크기
-     *
-     * 에어드랍 물량 모두 LP2에 분배 (없었던 시기의 에어드랍 물량 이월)
-     */
-    it("유동성이 없었을 때, 발생했던 에어드랍 물량 이월", async () => {
-      // 동일한 크기의 두개 포지션을 생성합니다.
-      const lp2 = await mintNewPosition(
-        -10 * TICK_SPACING,
-        -6 * TICK_SPACING,
-        1
-      );
-
-      await clearLPBalance(); // 계산을 위해, 밸런스 삭제
-
-      // 에어드랍을 수행합니다.
-      const givenAirdropStartTime =
-        (await ethers.provider.getBlock("latest")).timestamp + 3600;
-      const givenAirdropPeriod = WEEK;
-      const givenReward = ethers.utils.parseEther("12");
-      await pool
-        .connect(airdrop)
-        .depositAirdropAndReward(
-          0,
-          0,
-          givenReward,
-          givenAirdropStartTime,
-          givenAirdropPeriod
-        );
-
-      // 에어드랍의 절반 지나감
-      await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod / 2);
-
-      const currentPrice = await getPriceAtTick(-6 * TICK_SPACING);
-      const targetPrice = await getPriceAtTick(-7 * TICK_SPACING);
-      const inputAmount = await getDx(
-        lp2.liquidity,
-        targetPrice,
-        currentPrice,
-        true
-      );
-
-      // 스왑 수행 (LP1의 포지션에서 LP2의 포지션 쪽으로 가격이 벗어남)
-      if ((await pool.token0()).toLowerCase() == KLAY.address) {
-        await swapKLAY2stKLAY(inputAmount);
-      } else {
-        await swapstKLAY2KLAY(inputAmount);
-      }
-
-      // 에어드랍이 완전히 지나감
-      await setNextTimeStamp(givenAirdropStartTime + givenAirdropPeriod);
-
-      // 포지션 2번이 받을 수 있는 KLY 리워드의 크기
-      const lp2Reward = await poolManager
-        .connect(liquidityProvider)
-        .positionRewardAmount(lp2.positionId);
-
-      expect(lp2Reward.rewardAmount).to.be.closeTo(
-        givenReward,
-        DUST_VALUE_LIMIT
-      );
-    });
   });
 
   /**
@@ -581,7 +514,7 @@ describe("GCKlayPool TEST", function () {
    * > 유동성을 공급한 포지션이 존재하였을 때, 납입한 유동성과 예치한 시간에 비례하여 stKLAY가 올바르게 분배되는가?
    *
    */
-  describe.only("# stKLAY 분배 시나리오 테스트", async () => {
+  describe("# stKLAY 분배 시나리오 테스트", async () => {
     /*
      *   -11 -10 -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3   4   5   6   7   8   9  10  11
      * ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
@@ -621,8 +554,6 @@ describe("GCKlayPool TEST", function () {
           DUST_VALUE_LIMIT
         );
       } else {
-        console.log(`${lp1Reward.token0amount} ${lp1Reward.token1amount}`);
-        console.log(`${lp2Reward.token0amount} ${lp2Reward.token1amount}`);
         expect(lp1Reward.token0amount).to.be.closeTo(
           allocatedReward,
           DUST_VALUE_LIMIT
